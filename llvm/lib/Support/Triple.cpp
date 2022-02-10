@@ -44,6 +44,7 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case lanai:          return "lanai";
   case le32:           return "le32";
   case le64:           return "le64";
+  case tinyRAM:        return "tinyRAM";
   case m68k:           return "m68k";
   case mips64:         return "mips64";
   case mips64el:       return "mips64el";
@@ -105,6 +106,8 @@ StringRef Triple::getArchTypePrefix(ArchType Kind) {
   case ppc64le:
   case ppc:
   case ppcle:       return "ppc";
+
+  case tinyRAM:     return "tinyRAM";
 
   case m68k:        return "m68k";
 
@@ -285,6 +288,7 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("armeb", armeb)
     .Case("avr", avr)
     .StartsWith("bpf", BPFArch)
+    .Case("tinyRAM", tinyRAM)
     .Case("m68k", m68k)
     .Case("mips", mips)
     .Case("mipsel", mipsel)
@@ -424,6 +428,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
     .Case("thumb", Triple::thumb)
     .Case("thumbeb", Triple::thumbeb)
     .Case("avr", Triple::avr)
+    .Case("tinyRAM", Triple::tinyRAM)
     .Case("m68k", Triple::m68k)
     .Case("msp430", Triple::msp430)
     .Cases("mips", "mipseb", "mipsallegrex", "mipsisa32r6",
@@ -711,6 +716,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::lanai:
   case Triple::le32:
   case Triple::le64:
+  case Triple::tinyRAM:
   case Triple::m68k:
   case Triple::mips64:
   case Triple::mips64el:
@@ -1285,6 +1291,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::kalimba:
   case llvm::Triple::lanai:
   case llvm::Triple::le32:
+  case llvm::Triple::tinyRAM:
   case llvm::Triple::m68k:
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
@@ -1370,6 +1377,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::kalimba:
   case Triple::lanai:
   case Triple::le32:
+  case Triple::tinyRAM:
   case Triple::m68k:
   case Triple::mips:
   case Triple::mipsel:
@@ -1423,6 +1431,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::hexagon:
   case Triple::kalimba:
   case Triple::lanai:
+  case Triple::tinyRAM:
   case Triple::m68k:
   case Triple::msp430:
   case Triple::r600:
@@ -1527,6 +1536,7 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::aarch64: T.setArch(Triple::aarch64_be); break;
   case Triple::bpfel:   T.setArch(Triple::bpfeb);      break;
   case Triple::mips64el:T.setArch(Triple::mips64);     break;
+  case Triple::tinyRAM: T.setArch(Triple::tinyRAM);    break;
   case Triple::mipsel:  T.setArch(Triple::mips);       break;
   case Triple::ppcle:   T.setArch(Triple::ppc);        break;
   case Triple::ppc64le: T.setArch(Triple::ppc64);      break;
@@ -1559,6 +1569,7 @@ Triple Triple::getLittleEndianArchVariant() const {
 
   case Triple::aarch64_be: T.setArch(Triple::aarch64);  break;
   case Triple::bpfeb:      T.setArch(Triple::bpfel);    break;
+  case Triple::tinyRAM:    T.setArch(Triple::tinyRAM);  break;
   case Triple::mips64:     T.setArch(Triple::mips64el); break;
   case Triple::mips:       T.setArch(Triple::mipsel);   break;
   case Triple::ppc:        T.setArch(Triple::ppcle);    break;
@@ -1588,6 +1599,7 @@ bool Triple::isLittleEndian() const {
   case Triple::kalimba:
   case Triple::le32:
   case Triple::le64:
+  case Triple::tinyRAM:
   case Triple::mips64el:
   case Triple::mipsel:
   case Triple::msp430:

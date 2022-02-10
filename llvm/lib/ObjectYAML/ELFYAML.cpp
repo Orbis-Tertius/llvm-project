@@ -824,6 +824,9 @@ void ScalarEnumerationTraits<ELFYAML::ELF_REL>::enumeration(
   case ELF::EM_PPC64:
 #include "llvm/BinaryFormat/ELFRelocs/PowerPC64.def"
     break;
+  case ELF::EM_88K:
+#include "llvm/BinaryFormat/ELFRelocs/TinyRAM.def"
+    break;
   case ELF::EM_68K:
 #include "llvm/BinaryFormat/ELFRelocs/M68k.def"
     break;

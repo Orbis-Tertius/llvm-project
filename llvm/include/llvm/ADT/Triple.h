@@ -58,6 +58,7 @@ public:
     bpfeb,          // eBPF or extended BPF or 64-bit BPF (big endian)
     csky,           // CSKY: csky
     hexagon,        // Hexagon: hexagon
+    tinyRAM,        // TinyRAM: tinyRAM
     m68k,           // M68k: Motorola 680x0 family
     mips,           // MIPS: mips, mipsallegrex, mipsr6
     mipsel,         // MIPSEL: mipsel, mipsallegrexe, mipsr6el
@@ -736,6 +737,11 @@ public:
                    getEnvironment() == Triple::GNUILP32
                ? PointerWidth == 32
                : PointerWidth == 64;
+  }
+
+  /// Tests whether the target is TinyRAM.
+  bool isTinyRAM() const {
+    return getArch() == Triple::tinyRAM;
   }
 
   /// Tests whether the target is MIPS 32-bit (little and big endian).

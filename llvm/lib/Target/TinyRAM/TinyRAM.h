@@ -1,0 +1,27 @@
+//===-- TinyRAM.h - Top-level interface for TinyRAM representation -------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+// This file contains the entry points for global functions defined in the LLVM
+// TinyRAM back-end.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef LLVM_LIB_TARGET_TINYRAM_TINYRAM_H
+#define LLVM_LIB_TARGET_TINYRAM_TINYRAM_H
+
+#include "MCTargetDesc/TinyRAMMCTargetDesc.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Target/TargetMachine.h"
+
+namespace llvm {
+class TinyRAMTargetMachine;
+class FunctionPass;
+
+FunctionPass *createTinyRAMISelDag(TinyRAMTargetMachine &TM, CodeGenOpt::Level OptLevel);
+} // end namespace llvm
+#endif

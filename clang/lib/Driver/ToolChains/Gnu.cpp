@@ -2098,6 +2098,9 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const AVRLibDirs[] = {"/lib"};
   static const char *const AVRTriples[] = {"avr"};
 
+  static const char *const tinyRAMLibDirs[] = {"/lib"};
+  static const char *const tinyRAMTriples[] = {"tinyRAM"};
+
   static const char *const X86_64LibDirs[] = {"/lib64", "/lib"};
   static const char *const X86_64Triples[] = {
       "x86_64-linux-gnu",       "x86_64-unknown-linux-gnu",
@@ -2338,6 +2341,10 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
     LibDirs.append(begin(AVRLibDirs), end(AVRLibDirs));
     TripleAliases.append(begin(AVRTriples), end(AVRTriples));
     break;
+  case llvm::Triple::tinyRAM:
+    LibDirs.append(begin(tinyRAMLibDirs), end(tinyRAMLibDirs));
+    TripleAliases.append(begin(tinyRAMTriples), end(tinyRAMTriples));
+    break;
   case llvm::Triple::x86_64:
     if (TargetTriple.isX32()) {
       LibDirs.append(begin(X32LibDirs), end(X32LibDirs));
@@ -2496,6 +2503,8 @@ bool Generic_GCC::GCCInstallationDetector::ScanGCCForMultilibs(
     findMSP430Multilibs(D, TargetTriple, Path, Args, Detected);
   } else if (TargetArch == llvm::Triple::avr) {
     // AVR has no multilibs.
+  } else if (TargetArch == llvm::Triple::tinyRAM) {
+    // tinyRAM has no multilibs
   } else if (!findBiarchMultilibs(D, TargetTriple, Path, Args,
                                   NeedsBiarchSuffix, Detected)) {
     return false;
@@ -2759,6 +2768,7 @@ bool Generic_GCC::IsIntegratedAssemblerDefault() const {
   case llvm::Triple::mips64el:
   case llvm::Triple::msp430:
   case llvm::Triple::m68k:
+  case llvm::Triple::tinyRAM:
     return true;
   case llvm::Triple::sparc:
   case llvm::Triple::sparcel:

@@ -34,6 +34,7 @@
 #include "Targets/Sparc.h"
 #include "Targets/SystemZ.h"
 #include "Targets/TCE.h"
+#include "Targets/TinyRAM.h"
 #include "Targets/VE.h"
 #include "Targets/WebAssembly.h"
 #include "Targets/X86.h"
@@ -482,6 +483,9 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
 
   case llvm::Triple::tcele:
     return new TCELETargetInfo(Triple, Opts);
+
+  case llvm::Triple::tinyRAM:
+    return new TinyRAMTargetInfo(Triple, Opts);
 
   case llvm::Triple::x86:
     if (Triple.isOSDarwin())
