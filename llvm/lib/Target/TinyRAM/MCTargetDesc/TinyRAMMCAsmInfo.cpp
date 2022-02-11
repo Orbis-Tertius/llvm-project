@@ -13,17 +13,16 @@
 using namespace llvm;
 
 TinyRAMMCAsmInfo::TinyRAMMCAsmInfo(const Triple &TT) {
-  // TODO: Check!
   CodePointerSize = 4;
   CalleeSaveStackSlotSize = 4;
-  IsLittleEndian = false;
+  IsLittleEndian = true;
   UseDotAlignForAlignment = true;
   MinInstAlignment = 4;
 
   CommentString = "#";
   ZeroDirective = "\t.space\t";
   Data64bitsDirective = "\t.quad\t";
-  UsesELFSectionDirectiveForBSS = true;
-  SupportsDebugInformation = true;
-  ExceptionsType = ExceptionHandling::DwarfCFI;
+  UsesELFSectionDirectiveForBSS = false;
+  SupportsDebugInformation = false;
+  ExceptionsType = ExceptionHandling::None;
 }
