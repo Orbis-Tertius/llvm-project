@@ -61,12 +61,6 @@ public:
       const MCOperand &MO,
       SmallVectorImpl<MCFixup> &Fixups,
       const MCSubtargetInfo &STI) const;
-
-  unsigned getPC26Encoding(
-      const MCInst &MI,
-      unsigned OpNo,
-      SmallVectorImpl<MCFixup> &Fixups,
-      const MCSubtargetInfo &STI) const;
 };
 
 } // end anonymous namespace
