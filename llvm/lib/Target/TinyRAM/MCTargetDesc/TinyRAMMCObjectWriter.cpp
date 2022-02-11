@@ -37,7 +37,7 @@ TinyRAMObjectWriter::TinyRAMObjectWriter(uint8_t OSABI)
     : MCELFObjectTargetWriter(
           /*Is64Bit_=*/false,
           OSABI,
-          ELF::EM_88K,
+          ELF::EM_TINYRAM,
           /*HasRelocationAddend_=*/true) {}
 
 unsigned TinyRAMObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target, const MCFixup &Fixup, bool IsPCRel)
