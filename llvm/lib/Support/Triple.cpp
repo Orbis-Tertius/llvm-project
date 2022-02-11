@@ -1525,6 +1525,7 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::xcore:
   case Triple::ve:
   case Triple::csky:
+  case Triple::tinyRAM:
 
   // ARM is intentionally unsupported here, changing the architecture would
   // drop any arch suffixes.
@@ -1536,7 +1537,6 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::aarch64: T.setArch(Triple::aarch64_be); break;
   case Triple::bpfel:   T.setArch(Triple::bpfeb);      break;
   case Triple::mips64el:T.setArch(Triple::mips64);     break;
-  case Triple::tinyRAM: T.setArch(Triple::tinyRAM);    break;
   case Triple::mipsel:  T.setArch(Triple::mips);       break;
   case Triple::ppcle:   T.setArch(Triple::ppc);        break;
   case Triple::ppc64le: T.setArch(Triple::ppc64);      break;
@@ -1569,7 +1569,6 @@ Triple Triple::getLittleEndianArchVariant() const {
 
   case Triple::aarch64_be: T.setArch(Triple::aarch64);  break;
   case Triple::bpfeb:      T.setArch(Triple::bpfel);    break;
-  case Triple::tinyRAM:    T.setArch(Triple::tinyRAM);  break;
   case Triple::mips64:     T.setArch(Triple::mips64el); break;
   case Triple::mips:       T.setArch(Triple::mipsel);   break;
   case Triple::ppc:        T.setArch(Triple::ppcle);    break;
