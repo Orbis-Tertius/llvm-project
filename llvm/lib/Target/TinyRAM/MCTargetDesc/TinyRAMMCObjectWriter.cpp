@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"
+#include "TinyRAMFixupKinds.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCExpr.h"
@@ -29,6 +30,7 @@ public:
 protected:
   // Override MCELFObjectTargetWriter.
   unsigned getRelocType(MCContext &Ctx, const MCValue &Target, const MCFixup &Fixup, bool IsPCRel) const override;
+  bool needsRelocateWithSymbol(const MCSymbol &SD, unsigned Type) const override;
 };
 
 } // end anonymous namespace
@@ -42,7 +44,28 @@ TinyRAMObjectWriter::TinyRAMObjectWriter(uint8_t OSABI)
 
 unsigned TinyRAMObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target, const MCFixup &Fixup, bool IsPCRel)
     const {
-  return 0;
+  unsigned Type;
+  unsigned Kind = static_cast<unsigned>(Fixup.getKind());
+  switch (Kind) {
+  case TinyRAM::FIXUP_TINYRAM_32:
+    Type = ELF::R_TINYRAM_32;
+    break;
+  case TinyRAM::FIXUP_TINYRAM_NONE:
+    Type = ELF::R_TINYRAM_NONE;
+    break;
+  default:
+    llvm_unreachable("Invalid fixup kind!");
+  }
+  return Type;
+}
+
+bool TinyRAMObjectWriter::needsRelocateWithSymbol(const MCSymbol & /*SD*/, unsigned Type) const {
+  switch (Type) {
+  case ELF::R_TINYRAM_32:
+    return true;
+  default:
+    return false;
+  }
 }
 
 std::unique_ptr<MCObjectTargetWriter> llvm::createTinyRAMObjectWriter(uint8_t OSABI) {

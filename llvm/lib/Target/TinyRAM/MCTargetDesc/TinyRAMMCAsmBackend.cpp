@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 //#include "MCTargetDesc/TinyRAMMCFixups.h"
+#include "MCTargetDesc/TinyRAMFixupKinds.h"
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCELFObjectWriter.h"
@@ -14,6 +15,7 @@
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace llvm;
 
@@ -26,7 +28,7 @@ public:
 
   // Override MCAsmBackend
   unsigned getNumFixupKinds() const override {
-    return 0; // TinyRAM::NumTargetFixupKinds;
+    return TinyRAM::NumTargetFixupKinds;
   }
   const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
   void applyFixup(
@@ -55,7 +57,15 @@ public:
 } // end anonymous namespace
 
 const MCFixupKindInfo &TinyRAMMCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
-  return MCAsmBackend::getFixupKindInfo(Kind);
+  static const MCFixupKindInfo Infos[TinyRAM::NumTargetFixupKinds] = {
+      {"FIXUP_LANAI_32", 32, 32, 0},
+  };
+
+  if (Kind < FirstTargetFixupKind)
+    return MCAsmBackend::getFixupKindInfo(Kind);
+
+  assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() && "Invalid kind!");
+  return Infos[Kind - FirstTargetFixupKind];
 }
 
 void TinyRAMMCAsmBackend::applyFixup(
@@ -65,7 +75,12 @@ void TinyRAMMCAsmBackend::applyFixup(
     MutableArrayRef<char> Data,
     uint64_t Value,
     bool IsResolved,
-    const MCSubtargetInfo *STI) const {}
+    const MCSubtargetInfo *STI) const {
+  if (!Value)
+    return;
+
+  llvm_unreachable("Fixups should be always turned into relocations");
+}
 
 bool TinyRAMMCAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const {
   for (uint64_t I = 0; I != Count; ++I)

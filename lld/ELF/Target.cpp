@@ -30,6 +30,7 @@
 #include "Symbols.h"
 #include "SyntheticSections.h"
 #include "lld/Common/ErrorHandler.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Object/ELF.h"
 
 using namespace llvm;
@@ -87,6 +88,8 @@ TargetInfo *elf::getTarget() {
     return getSPARCV9TargetInfo();
   case EM_X86_64:
     return getX86_64TargetInfo();
+  case EM_TINYRAM:
+    return getTinyRAMTargetInfo();
   }
   llvm_unreachable("unknown target machine");
 }

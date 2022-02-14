@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "MCTargetDesc/TinyRAMFixupKinds.h"
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/MC/MCCodeEmitter.h"
@@ -90,7 +91,21 @@ unsigned TinyRAMMCCodeEmitter::getMachineOpValue(
     return MRI.getEncodingValue(MO.getReg());
   if (MO.isImm())
     return static_cast<uint64_t>(MO.getImm());
-  llvm_unreachable("Unexpected operand type!");
+
+  // MCOp must be an expression
+  assert(MO.isExpr());
+  const MCExpr *Expr = MO.getExpr();
+
+  // Extract the symbolic reference side of a binary expression.
+  if (Expr->getKind() == MCExpr::Binary) {
+    const MCBinaryExpr *BinaryExpr = static_cast<const MCBinaryExpr *>(Expr);
+    Expr = BinaryExpr->getLHS();
+  }
+
+  assert(isa<MCExpr>(Expr) || Expr->getKind() == MCExpr::SymbolRef);
+  // Push fixup (all info is contained within)
+  Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(TinyRAM::FIXUP_TINYRAM_32)));
+  return 0;
 }
 
 #include "TinyRAMGenMCCodeEmitter.inc"
