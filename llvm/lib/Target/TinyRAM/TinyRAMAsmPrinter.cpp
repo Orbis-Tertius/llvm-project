@@ -84,7 +84,7 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
     OutStreamer->emitLabel(Sym);
 
     const auto *SymbolExpr = MCBinaryExpr::createAdd(
-        MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx), MCConstantExpr::create(8, Ctx), Ctx);
+        MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx), MCConstantExpr::create(16, Ctx), Ctx);
     const MCInst MCMI1 = MCInstBuilder(TinyRAM::MOVi).addReg(TinyRAM::LR).addOperand(MCOperand::createExpr(SymbolExpr));
 
     auto Address = MI->getOperand(0);
