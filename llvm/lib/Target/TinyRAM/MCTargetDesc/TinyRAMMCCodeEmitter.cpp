@@ -74,12 +74,10 @@ void TinyRAMMCCodeEmitter::encodeInstruction(
   uint64_t Bits = getBinaryCodeForInstr(MI, Fixups, STI);
   assert(MCII.get(MI.getOpcode()).getSize() == 8 && "Unexpected instr length");
 
-  // Emit bytes in big-endian
-  for (int I = (8 - 1) * 8; I >= 0; I -= 8)
-    OS << static_cast<uint8_t>((Bits >> I) & 0xff);
-
-  // for (int I = 0; I < 8; I++)
-  //   OS << static_cast<uint8_t>((Bits >> (I * 8)) & 0xff);
+  // Emit bytes in little-endian
+  for (int I = 0; I < 8; I++) {
+    OS << static_cast<uint8_t>((Bits >> (I * 8)) & 0xff);
+  }
 }
 
 unsigned TinyRAMMCCodeEmitter::getMachineOpValue(

@@ -44,11 +44,11 @@ class F_Inst<dag outs,
   bits<4> dst;
   bits<4> op1;
 
-  let Inst{0-4} = op;
-  let Inst{5} = immMode;
-  let Inst{6-9} = dst;
-  let Inst{10-13} = op1;
-  let Inst{14-31} = 0b000000000000000000;
+  let Inst{63-59} = op;
+  let Inst{58} = immMode;
+  let Inst{57-54} = dst;
+  let Inst{53-50} = op1;
+  let Inst{49-32} = 0b000000000000000000;
 }
 
 class F_Imm<dag outs,
@@ -69,8 +69,8 @@ class F_Reg<dag outs,
   bits<4> op2;
 
   let immMode = 0;
-  let Inst {32-59} = 0b0000000000000000000000000000;
-  let Inst {60-63} = op2;
+  let Inst {31-4} = 0b0000000000000000000000000000;
+  let Inst {3-0} = op2;
   }
 
 class F_RRR<bits<5> _op,
@@ -93,7 +93,7 @@ class F_RRI<bits<5> _op,
     bits<32> op2;
 
     let op = _op;
-    let Inst {32-63} = op2;
+    let Inst {31-0} = op2;
   }
 
 class F_RR0<bits<5> _op,
@@ -119,7 +119,7 @@ class F_RI0<bits<5> _op,
   let op = _op;
 
   let op1 = 0b0000;
-  let Inst {32-63} = op2;
+  let Inst {31-0} = op2;
   }
 
 class F_0R0<bits<5> _op,
@@ -147,7 +147,7 @@ class F_0I0<bits<5> _op,
 
   let dst = 0b0000;
   let op1 = 0b0000;
-  let Inst {32-63} = op2;
+  let Inst {31-0} = op2;
   }
 
 class F_0RR<bits<5> _op,
@@ -174,5 +174,5 @@ class F_0RI<bits<5> _op,
 
   let op = _op;
   let dst = 0b0000;
-  let Inst {32-63} = op2;
+  let Inst {31-0} = op2;
   }

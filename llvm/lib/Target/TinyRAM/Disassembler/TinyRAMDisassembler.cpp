@@ -101,8 +101,9 @@ DecodeStatus TinyRAMDisassembler::getInstruction(
 
   // Construct the instruction.
   uint64_t Inst = 0;
-  for (uint32_t I = 0; I < Size; ++I)
-    Inst = (Inst << 8) | Bytes[I];
+  for (uint32_t I = 0; I < Size; ++I) {
+    Inst |= ((uint64_t)Bytes[I]) << (I * 8);
+  }
 
   return decodeInstruction(DecoderTableTinyRAM64, MI, Inst, Address, this, STI);
 }
