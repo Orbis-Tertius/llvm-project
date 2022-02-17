@@ -58,7 +58,6 @@ class TinyRAMOperand : public MCParsedAsmOperand {
     OpKind_Token,
     OpKind_Reg,
     OpKind_Imm,
-    OpKind_Mem // Reg+Imm, Reg+Reg, Reg+(Reg<<(1,2,4,8))
   };
 
   OperandKind Kind;
@@ -116,17 +115,13 @@ public:
     return Kind == OpKind_Imm;
   }
 
-  bool isImm(int64_t MinValue, int64_t MaxValue) const {
-    return Kind == OpKind_Imm && inRange(Imm, MinValue, MaxValue);
-  }
-
   const MCExpr *getImm() const {
     assert(isImm() && "Invalid type access!");
     return Imm;
   }
 
   bool isMem() const override {
-    return Kind == OpKind_Mem;
+    return false;
   }
 
   bool isToken() const override {
@@ -169,23 +164,6 @@ public:
     addExpr(Inst, getImm());
   }
 
-  bool isU5Imm() const {
-    return isImm(0, 31);
-  }
-  // TODO
-  bool isU5ImmO() const {
-    return isImm(0, 31);
-  }
-  bool isU10ImmWO() const {
-    return isImm(0, 1023);
-  }
-  bool isU16Imm() const {
-    return isImm(0, 65535);
-  }
-  bool isS16Imm() const {
-    return isImm(-32768, 32767);
-  }
-
   void print(raw_ostream &OS) const override {
     switch (Kind) {
     case OpKind_Imm:
@@ -196,9 +174,6 @@ public:
       break;
     case OpKind_Reg:
       OS << "Reg: %r" << /*getReg() <<*/ "\n";
-      break;
-    case OpKind_Mem:
-      OS << "MemImm: " << /* *getMemOffset() <<*/ "\n";
       break;
     }
   }
@@ -290,19 +265,6 @@ bool TinyRAMAsmParser::ParseInstruction(
 }
 
 bool TinyRAMAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
-  // Invoke a custom associated parser.
-
-  // TODO: restore
-  OperandMatchResultTy Result = MatchOperand_ParseFail; // = MatchOperandParserImpl(Operands, Mnemonic);
-
-  if (Result == MatchOperand_Success)
-    return Result;
-  if (Result == MatchOperand_ParseFail) {
-    Parser.eatToEndOfStatement();
-    return Result;
-  }
-  assert(Result == MatchOperand_NoMatch && "Unexpected match result");
-
   // Check if it is a register.
   if (Lexer.is(AsmToken::Percent)) {
     unsigned RegNo;
@@ -323,13 +285,26 @@ bool TinyRAMAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic)
     Operands.push_back(TinyRAMOperand::createImm(Expr, StartLoc, EndLoc));
     return false;
   }
-  llvm::dbgs() << "parseOperand failed (" << Mnemonic << ")\n";
+
+  if (Lexer.is(AsmToken::Identifier)) {
+    SMLoc StartLoc = Parser.getTok().getLoc();
+    MCExpr const *Expr;
+    if (!getParser().parseExpression(Expr)) {
+#if 0
+      llvm::dbgs() << "Expr (";
+      Expr->print(llvm::dbgs(), nullptr);
+      llvm::dbgs() << ")\n";
+#endif
+      SMLoc EndLoc = Parser.getTok().getLoc();
+      Operands.push_back(TinyRAMOperand::createImm(Expr, StartLoc, EndLoc));
+      return false;
+    }
+  }
+  llvm::dbgs() << "parseOperand failed (" << Mnemonic << ", " << Lexer.getKind() << ")\n";
   // Failure
   return true;
 }
 
-// Parses register of form %r<No> or %x<No>.
-// TODO Do we need to handle fcrS/crS?
 bool TinyRAMAsmParser::ParseRegister(unsigned &RegNo, SMLoc &StartLoc, SMLoc &EndLoc, bool RestoreOnFailure) {
   StartLoc = Parser.getTok().getLoc();
 
