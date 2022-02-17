@@ -127,7 +127,7 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
       auto MI = MCInstBuilder(TinyRAM::CMPEr).addReg(Op1).addReg(Op2.getReg());
       EmitToStreamer(*OutStreamer, MI);
     } else if (Op2.isImm()) {
-      auto MI = MCInstBuilder(TinyRAM::CMPEr).addReg(Op1).addImm(Op2.getImm());
+      auto MI = MCInstBuilder(TinyRAM::CMPEi).addReg(Op1).addImm(Op2.getImm());
       EmitToStreamer(*OutStreamer, MI);
     } else {
       llvm_unreachable("CMPNE: Unsupported operand type");
