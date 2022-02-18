@@ -527,18 +527,18 @@ let mayStore=1 in
 def STOREr : F_RR0<
    0b11100,
    (outs),
-   (ins  GPROpnd:$dst, GPROpnd:$op2),
-   !strconcat("store.w", " $dst, $op2"),
-   [(store GPROpnd:$op2, GPROpnd:$dst)]
+   (ins GPROpnd:$op2, GPROpnd:$dst),
+   !strconcat("store.w", " $op2, $dst"),
+   [(store GPROpnd:$dst, GPROpnd:$op2)]
    >;
 
 let mayStore=1 in
 def STOREi : F_RI0<
    0b11100,
    (outs),
-   (ins GPROpnd:$dst, i32imm:$op2),
-   !strconcat("store.w", " $dst, $op2"),
-   [(store imm:$op2, GPROpnd:$dst)]
+   (ins i32imm:$op2, GPROpnd:$dst),
+   !strconcat("store.w", " $op2, $dst"),
+   [(store GPROpnd:$dst, imm:$op2)]
    >;
 
 // Special instructions
