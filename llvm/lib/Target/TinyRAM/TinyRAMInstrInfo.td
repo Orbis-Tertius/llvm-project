@@ -103,6 +103,7 @@ def STWFI  : Pseudo<(outs), (ins GPROpnd:$src, MEMii:$addr),
                     "# STWFI $src, $addr",
                     [(store GPROpnd:$src, ADDRspii:$addr)]>;
 
+let isCompare=1, hasSideEffects=1 in {
 def CMPNEr : Pseudo<
     (outs),
     (ins GPROpnd:$op1, GPROpnd:$op2),
@@ -116,6 +117,7 @@ def CMPNEi : Pseudo<
      "# CMPNEi PSEUDO",
     [(TinyRAMcmpne GPROpnd:$op1, imm:$op2)]
     >;
+}
 
 def SelectCC : Pseudo<
     (outs GPROpnd:$dst),
