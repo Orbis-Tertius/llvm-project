@@ -190,6 +190,40 @@ def ANDr : F_RRR<
    [(set GPROpnd:$dst, (and GPROpnd:$op1, GPROpnd:$op2))]
    >;
 
+let isCommutable = 1 in
+def ORi : F_RRI<
+   0b00001,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("or", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (or GPROpnd:$op1, imm:$op2))]
+   >;
+
+let isCommutable = 1 in
+def ORr : F_RRR<
+   0b00001,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("or", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (or GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
+def XORi : F_RRI<
+   0b00010,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("xor", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (xor GPROpnd:$op1, imm:$op2))]
+   >;
+
+def XORr : F_RRR<
+   0b00010,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("xor", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (xor GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
 def SHLi : F_RRI<
    0b01011,
    (outs GPROpnd:$dst),
