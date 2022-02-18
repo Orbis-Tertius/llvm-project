@@ -67,8 +67,8 @@ public:
     setBooleanContents(ZeroOrOneBooleanContent);
     setBooleanVectorContents(ZeroOrOneBooleanContent);
 
-    setMinFunctionAlignment(Align(32));
-    setPrefFunctionAlignment(Align(32));
+    setMinFunctionAlignment(Align(8));
+    setPrefFunctionAlignment(Align(8));
 
     // setOperationAction(ISD::CTLZ, MVT::i32, Custom);
     setOperationAction(ISD::CTTZ, MVT::i32, Expand);
