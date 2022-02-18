@@ -240,6 +240,22 @@ def SHLr : F_RRR<
    [(set GPROpnd:$dst, (shl GPROpnd:$op1, GPROpnd:$op2))]
    >;
 
+def SHRi : F_RRI<
+   0b01100,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("shr", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (srl GPROpnd:$op1, imm:$op2))]
+   >;
+
+def SHRr : F_RRR<
+   0b01100,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("shr", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (srl GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
 let isCommutable = 1 in
 def ANDi : F_RRI<
    0b00000,
@@ -265,6 +281,38 @@ def MULLi : F_RRI<
    (ins GPROpnd:$op1, i32imm:$op2),
    !strconcat("mull", " $dst, $op1, $op2"),
    [(set GPROpnd:$dst, (mul GPROpnd:$op1, imm:$op2))]
+   >;
+
+def UDIVr : F_RRR<
+   0b01001,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("udiv", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (udiv GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
+def UDIVi : F_RRI<
+   0b01001,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("udiv", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (udiv GPROpnd:$op1, imm:$op2))]
+   >;
+
+def UMODr : F_RRR<
+   0b01010,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("umod", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (urem GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
+def UMODi : F_RRI<
+   0b01010,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("umod", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (urem GPROpnd:$op1, imm:$op2))]
    >;
 
 def SUBr : F_RRR<
