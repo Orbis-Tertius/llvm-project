@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "TinyRAMISelLowering.h"
-#include "TinyRAMCondCode.h"
 #include "TinyRAMTargetMachine.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/ISDOpcodes.h"
