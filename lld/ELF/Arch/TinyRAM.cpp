@@ -49,7 +49,6 @@ void TinyRAM::relocate(uint8_t *loc, const Relocation &rel,
                        uint64_t val) const {
   switch (rel.type) {
   case R_TINYRAM_32:
-    printf("relocation: writing 0x%lx\r\n", val);
     checkUInt(loc, val, 32, rel);
     write32le(loc, val);
     break;
