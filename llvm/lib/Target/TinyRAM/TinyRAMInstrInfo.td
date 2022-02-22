@@ -119,6 +119,9 @@ def CMPNEi : Pseudo<
     >;
 }
 
+// applying hasSideEffects is a hack
+// without it the instruction is sometimes optimized out
+let hasSideEffects=1 in
 def SelectCC : Pseudo<
     (outs GPROpnd:$dst),
     (ins GPROpnd:$src, GPROpnd:$src2),
