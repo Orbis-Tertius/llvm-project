@@ -69,9 +69,6 @@ public:
     setMinFunctionAlignment(Align(8));
     setPrefFunctionAlignment(Align(8));
 
-    // setOperationAction(ISD::CTLZ, MVT::i32, Custom);
-    setOperationAction(ISD::CTTZ, MVT::i32, Expand);
-
     setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
     setOperationAction(ISD::BlockAddress, MVT::i32, Custom);
 
@@ -80,10 +77,7 @@ public:
     setOperationAction(ISD::SETCC, MVT::i32, Custom);
 
     setOperationAction(ISD::BR_JT, MVT::Other, Expand);
-
-    // TODO: is this needed?
     setOperationAction(ISD::BRCOND, MVT::Other, Expand);
-    setOperationAction(ISD::BR_JT, MVT::Other, Expand);
 
     setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i32, Expand);
     setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i64, Expand);
@@ -114,8 +108,6 @@ public:
   SDValue PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const override {
     if (DCI.isBeforeLegalizeOps())
       return SDValue();
-
-    LLVM_DEBUG(dbgs() << "In PerformDAGCombine\n");
 
     return SDValue();
   }
@@ -243,7 +235,7 @@ public:
     SmallVector<SDValue, 4> CFRegNode;
     SmallVector<ArgDataPair, 4> ArgData;
 
-    // CopyFromReg and Load args
+    // 1a. CopyFromReg and Load args
     for (unsigned I = 0, E = ArgLocs.size(); I != E; ++I) {
 
       CCValAssign &VA = ArgLocs[I];
@@ -320,7 +312,6 @@ public:
       assert(VA.isRegLoc() && "Can only return in registers!");
 
       // Promote the value as required.
-      // TODO: Refactor into own method?
       switch (VA.getLocInfo()) {
       case CCValAssign::SExt:
         RetValue = DAG.getNode(ISD::SIGN_EXTEND, DL, VA.getLocVT(), RetValue);
@@ -392,8 +383,8 @@ public:
     return true;
   }
 
-  /// LowerCallResult - Lower the result values of a call into the
-  /// appropriate copies out of appropriate physical registers / memory locations.
+  /// Lower the result values of a call into the appropriate copies
+  /// out of appropriate physical registers / memory locations.
   static SDValue LowerCallResult(
       SDValue Chain,
       SDValue InFlag,
@@ -415,10 +406,8 @@ public:
     return Chain;
   }
 
-  /// LowerCCCCallTo - functions arguments are copied from virtual
-  /// regs to (physical regs)/(stack frame), CALLSEQ_START and
-  /// CALLSEQ_END are emitted.
-  /// TODO: isTailCall, sret.
+  /// Function arguments are copied from virtual regs to (physical regs)/(stack frame),
+  /// CALLSEQ_START and CALLSEQ_END are emitted.
   SDValue LowerCCCCallTo(
       SDValue Chain,
       SDValue Callee,
@@ -471,8 +460,7 @@ public:
         break;
       }
 
-      // Arguments that can be passed on register must be kept at
-      // RegsToPass vector
+      // Arguments that can be passed on register must be kept at RegsToPass vector
       if (VA.isRegLoc()) {
         RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
       } else {

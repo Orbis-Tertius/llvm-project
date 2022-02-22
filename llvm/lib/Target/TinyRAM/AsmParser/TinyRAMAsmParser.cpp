@@ -42,15 +42,6 @@ static unsigned MatchRegisterName(StringRef Name);
 
 namespace {
 
-// Return true if Expr is in the range [MinValue, MaxValue].
-bool inRange(const MCExpr *Expr, int64_t MinValue, int64_t MaxValue) {
-  if (auto *CE = dyn_cast<MCConstantExpr>(Expr)) {
-    int64_t Value = CE->getValue();
-    return Value >= MinValue && Value <= MaxValue;
-  }
-  return false;
-}
-
 // Instances of this class represented a parsed machine instruction
 class TinyRAMOperand : public MCParsedAsmOperand {
   enum OperandKind {

@@ -40,12 +40,6 @@ using namespace llvm;
 
 namespace {
 class TinyRAMAsmPrinter : public AsmPrinter {
-#if 0
-    TinyRAMTargetStreamer &getTargetStreamer() {
-      return static_cast<TinyRAMTargetStreamer &>(
-          *OutStreamer->getTargetStreamer());
-    }
-#endif
 public:
   explicit TinyRAMAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
       : AsmPrinter(TM, std::move(Streamer)) {}

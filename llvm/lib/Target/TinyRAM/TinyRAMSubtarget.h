@@ -5,10 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file declares the TinyRAM specific subclass of TargetSubtargetInfo.
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef LLVM_LIB_TARGET_TINYRAM_TINYRAMSUBTARGET_H
 #define LLVM_LIB_TARGET_TINYRAM_TINYRAMSUBTARGET_H

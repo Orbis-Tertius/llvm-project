@@ -5,10 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file implements the TinyRAMMCCodeEmitter class.
-//
-//===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/TinyRAMFixupKinds.h"
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"

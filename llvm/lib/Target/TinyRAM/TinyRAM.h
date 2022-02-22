@@ -5,11 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file contains the entry points for global functions defined in the LLVM
-// TinyRAM back-end.
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef LLVM_LIB_TARGET_TINYRAM_TINYRAM_H
 #define LLVM_LIB_TARGET_TINYRAM_TINYRAM_H
