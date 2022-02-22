@@ -1,4 +1,4 @@
-//===-- LanaiFixupKinds.h - Lanai Specific Fixup Entries --------*- C++ -*-===//
+//===-- LanaiFixupKinds.h - Lanai Specific Fixup Entries ------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,9 +15,7 @@ namespace llvm {
 namespace TinyRAM {
 
 enum Fixups {
-  FIXUP_TINYRAM_NONE = FirstTargetFixupKind,
-
-  FIXUP_TINYRAM_32, // general 32-bit relocation
+  FIXUP_TINYRAM_32 = FirstTargetFixupKind,
 
   // Marker
   LastTargetFixupKind,

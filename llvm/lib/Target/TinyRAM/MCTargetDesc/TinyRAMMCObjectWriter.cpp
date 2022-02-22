@@ -50,9 +50,6 @@ unsigned TinyRAMObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
   case TinyRAM::FIXUP_TINYRAM_32:
     Type = ELF::R_TINYRAM_32;
     break;
-  case TinyRAM::FIXUP_TINYRAM_NONE:
-    Type = ELF::R_TINYRAM_NONE;
-    break;
   default:
     llvm_unreachable("Invalid fixup kind!");
   }
