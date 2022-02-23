@@ -508,6 +508,8 @@ def CMPGEi : F_0RI<
 
 // load / store instructions
 
+// i32
+
 let mayLoad=1 in
 def LOADr : F_RR0<
    0b11101,
@@ -542,6 +544,44 @@ def STOREi : F_RI0<
    (ins i32imm:$op2, GPROpnd:$dst),
    !strconcat("store.w", " $op2, $dst"),
    [(store GPROpnd:$dst, imm:$op2)]
+   >;
+
+// i8
+
+let mayLoad=1 in
+def LOADBr : F_RR0<
+   0b11011,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op2),
+   !strconcat("load.b", " $dst, $op2"),
+   []
+   >;
+
+let mayLoad=1 in
+def LOADBi : F_RI0<
+   0b11011,
+   (outs GPROpnd:$dst),
+   (ins i32imm:$op2),
+   !strconcat("load.b", " $dst, $op2"),
+   []
+   >;
+
+let mayStore=1 in
+def STOREBr : F_RR0<
+   0b11010,
+   (outs),
+   (ins GPROpnd:$op2, GPROpnd:$dst),
+   !strconcat("store.b", " $op2, $dst"),
+   []
+   >;
+
+let mayStore=1 in
+def STOREBi : F_RI0<
+   0b11010,
+   (outs),
+   (ins i32imm:$op2, GPROpnd:$dst),
+   !strconcat("store.b", " $op2, $dst"),
+   []
    >;
 
 // Special instructions
@@ -585,6 +625,14 @@ def ANSWERr : F_0R0<
 
 
 // Patterns *******************************************************************
+
+def : Pat<(zextloadi8 i32:$addr), (LOADBi i32imm:$addr)>;
+def : Pat<(zextloadi8 GPROpnd:$addr), (LOADBr GPROpnd:$addr)>;
+
+def : Pat<(truncstorei8 i32:$val, GPROpnd:$addr),
+          (STOREBi GPROpnd:$addr, i32imm:$val)>;
+def : Pat<(truncstorei8 GPROpnd:$val, GPROpnd:$addr),
+          (STOREBr GPROpnd:$addr, GPROpnd:$val)>;
 
 def : Pat<(i32 (TinyRAMWrapper tglobaladdr:$dst)),
           (MOVi tglobaladdr:$dst)>;
