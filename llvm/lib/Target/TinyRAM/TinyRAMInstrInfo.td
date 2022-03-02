@@ -634,6 +634,9 @@ def : Pat<(truncstorei8 i32:$val, GPROpnd:$addr),
 def : Pat<(truncstorei8 GPROpnd:$val, GPROpnd:$addr),
           (STOREBr GPROpnd:$addr, GPROpnd:$val)>;
 
+def : Pat<(extloadi8 i32:$addr), (LOADBi i32imm:$addr)>;
+def : Pat<(extloadi8 GPROpnd:$addr), (LOADBr GPROpnd:$addr)>;
+
 def : Pat<(i32 (TinyRAMWrapper tglobaladdr:$dst)),
           (MOVi tglobaladdr:$dst)>;
 
