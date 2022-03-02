@@ -34,7 +34,7 @@ std::string computeDataLayout(const Triple &TT, StringRef CPU, StringRef FS) {
 
   Ret += "-p:32:32";
 
-  Ret += "-i1:8:32-i8:8:32-i16:32:32-i32:32:32";
+  Ret += "-i1:8:32-i8:8:32-i16:16:32-i32:32:32";
 
   Ret += "-i64:32";
 
