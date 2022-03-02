@@ -86,6 +86,9 @@ public:
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8, Expand);
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i16, Expand);
 
+    setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i16, Expand);
+    setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i16, Custom);
+
     setMinimumJumpTableEntries(UINT_MAX);
   }
 
@@ -104,6 +107,8 @@ public:
       return LowerSELECT_CC(Op, DAG);
     case ISD::SETCC:
       return LowerSETCC(Op, DAG);
+    case ISD::LOAD:
+      return LowerEXTLOAD(Op, DAG);
     }
 
     return SDValue();
@@ -644,6 +649,45 @@ public:
     SDValue Ops[] = {TrueV, FalseV, Cmp};
 
     return DAG.getNode(TinyRAMISD::SELECT_CC, Dl, VTs, Ops);
+  }
+
+  SDValue LowerEXTLOAD(SDValue Op, SelectionDAG &DAG) const {
+    const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+    LLVMContext &Context = *DAG.getContext();
+    LoadSDNode *LD = cast<LoadSDNode>(Op);
+    assert(LD->getExtensionType() == ISD::EXTLOAD && "Unexpected extension type");
+    assert(LD->getMemoryVT() == MVT::i16 && "Unexpected load EVT");
+
+    SDValue Chain = LD->getChain();
+    SDValue BasePtr = LD->getBasePtr();
+    SDLoc DL(Op);
+
+    SDValue Low = DAG.getExtLoad(
+        ISD::ZEXTLOAD,
+        DL,
+        MVT::i32,
+        Chain,
+        BasePtr,
+        LD->getPointerInfo(),
+        MVT::i8,
+        Align(1),
+        LD->getMemOperand()->getFlags());
+    SDValue HighAddr = DAG.getNode(ISD::ADD, DL, MVT::i32, BasePtr, DAG.getConstant(1, DL, MVT::i32));
+    SDValue High = DAG.getExtLoad(
+        ISD::EXTLOAD,
+        DL,
+        MVT::i32,
+        Chain,
+        HighAddr,
+        LD->getPointerInfo().getWithOffset(2),
+        MVT::i8,
+        Align(1),
+        LD->getMemOperand()->getFlags());
+    SDValue HighShifted = DAG.getNode(ISD::SHL, DL, MVT::i32, High, DAG.getConstant(8, DL, MVT::i32));
+    SDValue Result = DAG.getNode(ISD::OR, DL, MVT::i32, Low, HighShifted);
+    Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, Low.getValue(1), High.getValue(1));
+    SDValue Ops[] = {Result, Chain};
+    return DAG.getMergeValues(Ops, DL);
   }
 
   const char *getTargetNodeName(unsigned Opcode) const override {
