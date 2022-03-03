@@ -89,6 +89,8 @@ public:
     setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i16, Expand);
     setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i16, Custom);
 
+    setTruncStoreAction(MVT::i32, MVT::i16, Custom);
+
     setMinimumJumpTableEntries(UINT_MAX);
   }
 
@@ -109,6 +111,8 @@ public:
       return LowerSETCC(Op, DAG);
     case ISD::LOAD:
       return LowerEXTLOAD(Op, DAG);
+    case ISD::STORE:
+      return LowerTRUNCSTORE(Op, DAG);
     }
 
     return SDValue();
@@ -688,6 +692,33 @@ public:
     Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, Low.getValue(1), High.getValue(1));
     SDValue Ops[] = {Result, Chain};
     return DAG.getMergeValues(Ops, DL);
+  }
+
+  SDValue LowerTRUNCSTORE(SDValue Op, SelectionDAG &DAG) const {
+    StoreSDNode *LD = cast<StoreSDNode>(Op);
+    assert(LD->isTruncatingStore() && "Expecting truncating store");
+    assert(LD->getMemoryVT() == MVT::i16 && "Unexpected store EVT");
+
+    SDValue Chain = LD->getChain();
+    SDValue BasePtr = LD->getBasePtr();
+    SDValue Value = LD->getValue();
+    SDLoc DL(Op);
+
+    SDValue Low = Value;
+    SDValue High = DAG.getNode(ISD::SRL, DL, MVT::i32, Value, DAG.getConstant(8, DL, MVT::i32));
+    SDValue StoreLow = DAG.getTruncStore(
+        Chain, DL, Low, BasePtr, LD->getPointerInfo(), MVT::i8, Align(1), LD->getMemOperand()->getFlags());
+    SDValue HighAddr = DAG.getNode(ISD::ADD, DL, MVT::i32, BasePtr, DAG.getConstant(1, DL, MVT::i32));
+    SDValue StoreHigh = DAG.getTruncStore(
+        Chain,
+        DL,
+        High,
+        HighAddr,
+        LD->getPointerInfo().getWithOffset(1),
+        MVT::i8,
+        Align(1),
+        LD->getMemOperand()->getFlags());
+    return DAG.getNode(ISD::TokenFactor, DL, MVT::Other, StoreLow, StoreHigh);
   }
 
   const char *getTargetNodeName(unsigned Opcode) const override {
