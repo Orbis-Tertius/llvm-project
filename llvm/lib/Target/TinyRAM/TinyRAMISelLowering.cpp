@@ -91,6 +91,11 @@ public:
 
     setTruncStoreAction(MVT::i32, MVT::i16, Custom);
 
+    setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i8, Expand);
+    setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i16, Expand);
+
+    setOperationAction(ISD::SRA, MVT::i32, Custom);
+
     setMinimumJumpTableEntries(UINT_MAX);
   }
 
@@ -113,6 +118,8 @@ public:
       return LowerEXTLOAD(Op, DAG);
     case ISD::STORE:
       return LowerTRUNCSTORE(Op, DAG);
+    case ISD::SRA:
+      return LowerSRA(Op, DAG);
     }
 
     return SDValue();
@@ -719,6 +726,36 @@ public:
         Align(1),
         LD->getMemOperand()->getFlags());
     return DAG.getNode(ISD::TokenFactor, DL, MVT::Other, StoreLow, StoreHigh);
+  }
+
+  SDValue LowerSRA(SDValue Op, SelectionDAG &DAG) const {
+    assert(Op->getOpcode() == ISD::SRA && "Expecting SRA opcode");
+    assert(Op.getValueType().getSimpleVT() == MVT::i32);
+    const SDNode *N = Op.getNode();
+    EVT VT = Op.getValueType();
+    SDLoc Dl(N);
+
+    if (isa<ConstantSDNode>(N->getOperand(1))) {
+      auto Shift = cast<ConstantSDNode>(N->getOperand(1))->getZExtValue();
+      SDValue Value = N->getOperand(0);
+      uint64_t Mask1 = 1 << 31;
+      uint32_t Mask2 = ~(0xffffffff >> Shift);
+
+      auto And = DAG.getNode(ISD::AND, Dl, VT, Value, DAG.getConstant(Mask1, Dl, VT));
+      auto Mask = DAG.getSelectCC(
+          Dl,
+          DAG.getConstant(0, Dl, MVT::i32) /*LHS*/,
+          And /*RHS*/,
+          DAG.getConstant(0, Dl, MVT::i32) /*True*/,
+          DAG.getConstant(Mask2, Dl, MVT::i32) /*False*/,
+          ISD::CondCode::SETEQ);
+      auto Shifted = DAG.getNode(ISD::SRL, Dl, MVT::i32, Value, DAG.getConstant(Shift, Dl, VT));
+      auto Result = DAG.getNode(ISD::OR, Dl, VT, Mask, Shifted);
+
+      return Result;
+    }
+
+    return SDValue();
   }
 
   const char *getTargetNodeName(unsigned Opcode) const override {
