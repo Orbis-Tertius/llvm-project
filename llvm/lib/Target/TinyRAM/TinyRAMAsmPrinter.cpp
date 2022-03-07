@@ -88,6 +88,15 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
     EmitToStreamer(*OutStreamer, MCMI2);
   } break;
 
+  case TinyRAM::BLA: {
+    if (MI->getOperand(0).getType() == MachineOperand::MO_Register) {
+      const MCInst MCMI = MCInstBuilder(TinyRAM::JMPr).addReg(MI->getOperand(0).getReg());
+      EmitToStreamer(*OutStreamer, MCMI);
+    } else {
+      llvm_unreachable("Unexpected BLA operand");
+    }
+  } break;
+
   case TinyRAM::STWSPi: {
     auto Reg = MI->getOperand(0).getReg();
     auto Offset = MI->getOperand(1).getImm();
