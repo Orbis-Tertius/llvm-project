@@ -40,7 +40,7 @@ TinyRAMTargetInfo::TinyRAMTargetInfo(const llvm::Triple &Triple,
 
   Layout += "-i64:32";
 
-  Layout += "-a:32:32";
+  Layout += "-a:0:32";
 
   Layout += "-n32";
 
