@@ -164,6 +164,8 @@ def BLA : Pseudo<
     >;
 }
 
+def : Pat<(call texternalsym:$addr), (BLRF texternalsym:$addr)>;
+
 // Real instructions **********************************************************
 
 let isCommutable = 1 in

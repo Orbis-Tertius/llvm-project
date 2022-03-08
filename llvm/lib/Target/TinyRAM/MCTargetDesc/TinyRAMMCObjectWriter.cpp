@@ -48,6 +48,7 @@ unsigned TinyRAMObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
   unsigned Kind = static_cast<unsigned>(Fixup.getKind());
   switch (Kind) {
   case TinyRAM::FIXUP_TINYRAM_32:
+  case FK_Data_4:
     Type = ELF::R_TINYRAM_32;
     break;
   default:
