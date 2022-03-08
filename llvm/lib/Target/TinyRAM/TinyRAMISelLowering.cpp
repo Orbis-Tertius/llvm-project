@@ -93,6 +93,7 @@ public:
 
     setTruncStoreAction(MVT::i32, MVT::i16, Custom);
 
+    setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i1, Expand);
     setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i8, Expand);
     setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i16, Expand);
 
