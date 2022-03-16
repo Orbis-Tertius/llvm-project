@@ -628,15 +628,15 @@ def ANSWERr : F_0R0<
 
 // Patterns *******************************************************************
 
-def : Pat<(zextloadi8 i32:$addr), (LOADBi i32imm:$addr)>;
+def : Pat<(zextloadi8 imm:$addr), (LOADBi i32imm:$addr)>;
 def : Pat<(zextloadi8 GPROpnd:$addr), (LOADBr GPROpnd:$addr)>;
 
-def : Pat<(truncstorei8 i32:$val, GPROpnd:$addr),
+def : Pat<(truncstorei8 imm:$val, GPROpnd:$addr),
           (STOREBi GPROpnd:$addr, i32imm:$val)>;
 def : Pat<(truncstorei8 GPROpnd:$val, GPROpnd:$addr),
           (STOREBr GPROpnd:$addr, GPROpnd:$val)>;
 
-def : Pat<(extloadi8 i32:$addr), (LOADBi i32imm:$addr)>;
+def : Pat<(extloadi8 imm:$addr), (LOADBi i32imm:$addr)>;
 def : Pat<(extloadi8 GPROpnd:$addr), (LOADBr GPROpnd:$addr)>;
 
 def : Pat<(i32 (TinyRAMWrapper tglobaladdr:$dst)),
