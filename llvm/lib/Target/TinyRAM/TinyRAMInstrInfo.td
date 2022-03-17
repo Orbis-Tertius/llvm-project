@@ -426,84 +426,84 @@ def CNJMPi : F_0I0<
 // comparison instructions
 let isCompare=1, hasSideEffects=1 in {
 
-def CMPEr : F_0RR<
+def CMPEr : F_RR0<
     0b01101,
     (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-    !strconcat("cmpe", " $op1, $op2"),
-    [(TinyRAMcmpe GPROpnd:$op1, GPROpnd:$op2)]
+    (ins GPROpnd:$dst, GPROpnd:$op2),
+    !strconcat("cmpe", " $dst, $op2"),
+    [(TinyRAMcmpe GPROpnd:$dst, GPROpnd:$op2)]
     >;
 
-def CMPEi : F_0RI<
+def CMPEi : F_RI0<
     0b01101,
     (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-    !strconcat("cmpe", " $op1, $op2"),
-    [(TinyRAMcmpe GPROpnd:$op1, imm:$op2)]
+    (ins GPROpnd:$dst, i32imm:$op2),
+    !strconcat("cmpe", " $dst, $op2"),
+    [(TinyRAMcmpe GPROpnd:$dst, imm:$op2)]
     >;
 
-def CMPAr : F_0RR<
+def CMPAr : F_RR0<
     0b01110,
     (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-    !strconcat("cmpa", " $op1, $op2"),
-    [(TinyRAMcmpa GPROpnd:$op1, GPROpnd:$op2)]
+    (ins GPROpnd:$dst, GPROpnd:$op2),
+    !strconcat("cmpa", " $dst, $op2"),
+    [(TinyRAMcmpa GPROpnd:$dst, GPROpnd:$op2)]
     >;
 
-def CMPAi : F_0RI<
+def CMPAi : F_RI0<
     0b01110,
     (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-    !strconcat("cmpa", " $op1, $op2"),
-    [(TinyRAMcmpa GPROpnd:$op1, imm:$op2)]
+    (ins GPROpnd:$dst, i32imm:$op2),
+    !strconcat("cmpa", " $dst, $op2"),
+    [(TinyRAMcmpa GPROpnd:$dst, imm:$op2)]
     >;
 
-def CMPAEr : F_0RR<
+def CMPAEr : F_RR0<
     0b01111,
     (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-    !strconcat("cmpae", " $op1, $op2"),
-    [(TinyRAMcmpae GPROpnd:$op1, GPROpnd:$op2)]
+    (ins GPROpnd:$dst, GPROpnd:$op2),
+    !strconcat("cmpae", " $dst, $op2"),
+    [(TinyRAMcmpae GPROpnd:$dst, GPROpnd:$op2)]
     >;
 
-def CMPAEi : F_0RI<
+def CMPAEi : F_RI0<
     0b01111,
     (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-    !strconcat("cmpae", " $op1, $op2"),
-    [(TinyRAMcmpae GPROpnd:$op1, imm:$op2)]
+    (ins GPROpnd:$dst, i32imm:$op2),
+    !strconcat("cmpae", " $dst, $op2"),
+    [(TinyRAMcmpae GPROpnd:$dst, imm:$op2)]
     >;
 
-def CMPGr : F_0RR<
+def CMPGr : F_RR0<
     0b10000,
     (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-    !strconcat("cmpg", " $op1, $op2"),
-    [(TinyRAMcmpg GPROpnd:$op1, GPROpnd:$op2)]
+    (ins GPROpnd:$dst, GPROpnd:$op2),
+    !strconcat("cmpg", " $dst, $op2"),
+    [(TinyRAMcmpg GPROpnd:$dst, GPROpnd:$op2)]
     >;
 
-def CMPGi : F_0RI<
+def CMPGi : F_RI0<
     0b10000,
     (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-    !strconcat("cmpg", " $op1, $op2"),
-    [(TinyRAMcmpg GPROpnd:$op1, imm:$op2)]
+    (ins GPROpnd:$dst, i32imm:$op2),
+    !strconcat("cmpg", " $dst, $op2"),
+    [(TinyRAMcmpg GPROpnd:$dst, imm:$op2)]
     >;
 
-def CMPGEr : F_0RR<
+def CMPGEr : F_RR0<
     0b10001,
     (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-    !strconcat("cmpge", " $op1, $op2"),
-    [(TinyRAMcmpge GPROpnd:$op1, GPROpnd:$op2)]
+    (ins GPROpnd:$dst, GPROpnd:$op2),
+    !strconcat("cmpge", " $dst, $op2"),
+    [(TinyRAMcmpge GPROpnd:$dst, GPROpnd:$op2)]
     >;
 
-def CMPGEi : F_0RI<
+def CMPGEi : F_RI0<
     0b10001,
     (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-    !strconcat("cmpge", " $op1, $op2"),
-    [(TinyRAMcmpge GPROpnd:$op1, imm:$op2)]
+    (ins GPROpnd:$dst, i32imm:$op2),
+    !strconcat("cmpge", " $dst, $op2"),
+    [(TinyRAMcmpge GPROpnd:$dst, imm:$op2)]
     >;
 
 }
