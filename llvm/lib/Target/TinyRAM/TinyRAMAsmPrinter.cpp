@@ -114,11 +114,13 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
     auto Reg1 = MI->getOperand(1).getReg();
     auto Reg2 = MI->getOperand(2).getReg();
 
-    const MCInst MCMI1 = MCInstBuilder(TinyRAM::MOVr).addReg(Dst).addReg(Reg2);
-    const MCInst MCMI2 = MCInstBuilder(TinyRAM::CMOVr).addReg(Dst).addReg(Reg1);
+    const MCInst MCMI1 = MCInstBuilder(TinyRAM::MOVr).addReg(TinyRAM::R12).addReg(Reg2);
+    const MCInst MCMI2 = MCInstBuilder(TinyRAM::CMOVr).addReg(TinyRAM::R12).addReg(Reg1);
+    const MCInst MCMI3 = MCInstBuilder(TinyRAM::MOVr).addReg(Dst).addReg(TinyRAM::R12);
 
     EmitToStreamer(*OutStreamer, MCMI1);
     EmitToStreamer(*OutStreamer, MCMI2);
+    EmitToStreamer(*OutStreamer, MCMI3);
   } break;
 
   case TinyRAM::CMPNEi:
