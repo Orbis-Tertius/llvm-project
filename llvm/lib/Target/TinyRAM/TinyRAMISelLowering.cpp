@@ -740,27 +740,23 @@ public:
     EVT VT = Op.getValueType();
     SDLoc Dl(N);
 
-    if (isa<ConstantSDNode>(N->getOperand(1))) {
-      auto Shift = cast<ConstantSDNode>(N->getOperand(1))->getZExtValue();
-      SDValue Value = N->getOperand(0);
-      uint64_t Mask1 = 1 << 31;
-      uint32_t Mask2 = ~(0xffffffff >> Shift);
+    SDValue Value = N->getOperand(0);
+    uint64_t Mask1 = 1 << 31;
+    auto Shift = DAG.getNode(ISD::SRL, Dl, VT, DAG.getConstant(0xffffffff, Dl, VT), N->getOperand(1));
+    auto Mask2 = DAG.getNode(ISD::XOR, Dl, VT, DAG.getConstant(0xffffffff, Dl, VT), Shift);
 
-      auto And = DAG.getNode(ISD::AND, Dl, VT, Value, DAG.getConstant(Mask1, Dl, VT));
-      auto Mask = DAG.getSelectCC(
-          Dl,
-          DAG.getConstant(0, Dl, MVT::i32) /*LHS*/,
-          And /*RHS*/,
-          DAG.getConstant(0, Dl, MVT::i32) /*True*/,
-          DAG.getConstant(Mask2, Dl, MVT::i32) /*False*/,
-          ISD::CondCode::SETEQ);
-      auto Shifted = DAG.getNode(ISD::SRL, Dl, MVT::i32, Value, DAG.getConstant(Shift, Dl, VT));
-      auto Result = DAG.getNode(ISD::OR, Dl, VT, Mask, Shifted);
+    auto And = DAG.getNode(ISD::AND, Dl, VT, Value, DAG.getConstant(Mask1, Dl, VT));
+    auto Mask = DAG.getSelectCC(
+        Dl,
+        DAG.getConstant(0, Dl, MVT::i32) /*LHS*/,
+        And /*RHS*/,
+        DAG.getConstant(0, Dl, MVT::i32) /*True*/,
+        Mask2 /*False*/,
+        ISD::CondCode::SETEQ);
+    auto Shifted = DAG.getNode(ISD::SRL, Dl, MVT::i32, Value, N->getOperand(1));
+    auto Result = DAG.getNode(ISD::OR, Dl, VT, Mask, Shifted);
 
-      return Result;
-    }
-
-    return SDValue();
+    return Result;
   }
 
   const char *getTargetNodeName(unsigned Opcode) const override {
