@@ -87,6 +87,9 @@ public:
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8, Expand);
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i16, Expand);
 
+    setOperationAction(ISD::SDIV, MVT::i32, LibCall);
+    setOperationAction(ISD::SREM, MVT::i32, LibCall);
+
     setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i1, Promote);
     setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i16, Expand);
 
