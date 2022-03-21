@@ -30,11 +30,9 @@ def SDT_TinyRAMWrapper  : SDTypeProfile<1, 1, [SDTCisSameAs<0, 1>, SDTCisPtrTy<0
 
 def SDT_tinyRAMStwsp    : SDTypeProfile<0, 2, [SDTCisInt<1>]>;
 
-def SDT_TinyRAMCmp      : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
+def SDT_TinyRAMBrcond   : SDTypeProfile<0, 4, [SDTCisVT<0, OtherVT>, SDTCisSameAs<1, 2>, SDTCisSameAs<1, 3>]>;
 
-def SDT_TinyRAMBrcond   : SDTypeProfile<0, 1, [SDTCisVT<0, OtherVT>]>;
-
-def SDT_TinyRAMSelectCC : SDTypeProfile<1, 2, [SDTCisSameAs<0, 1>, SDTCisSameAs<1, 2>]>;
+def SDT_TinyRAMSelectCC : SDTypeProfile<1, 5, [SDTCisSameAs<0, 1>, SDTCisSameAs<1, 2>, SDTCisSameAs<3, 4>, SDTCisInt<5>]>;
 
 
 // Nodes **********************************************************************
@@ -65,18 +63,11 @@ def tinyRAMStwsp     : SDNode<"TinyRAMISD::STWSP", SDT_tinyRAMStwsp,
 
 def TinyRAMWrapper  : SDNode<"TinyRAMISD::WRAPPER", SDT_TinyRAMWrapper>;
 
-def TinyRAMcmpe     : SDNode<"TinyRAMISD::CMPE", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-def TinyRAMcmpne    : SDNode<"TinyRAMISD::CMPNE", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-def TinyRAMcmpa     : SDNode<"TinyRAMISD::CMPA", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-def TinyRAMcmpae    : SDNode<"TinyRAMISD::CMPAE", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-def TinyRAMcmpg     : SDNode<"TinyRAMISD::CMPG", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-def TinyRAMcmpge    : SDNode<"TinyRAMISD::CMPGE", SDT_TinyRAMCmp, [SDNPOutGlue]>;
-
 def TinyRAMbrcond   : SDNode<"TinyRAMISD::BRCOND", SDT_TinyRAMBrcond,
-                             [SDNPHasChain, SDNPInGlue]>;
+                             [SDNPHasChain]>;
 
 def TinyRAMselectcc : SDNode<"TinyRAMISD::SELECT_CC", SDT_TinyRAMSelectCC,
-                             [SDNPInGlue]>;
+                             []>;
 
 
 // Pseudo instructions ********************************************************
@@ -103,30 +94,22 @@ def STWFI  : Pseudo<(outs), (ins GPROpnd:$src, MEMii:$addr),
                     "# STWFI $src, $addr",
                     [(store GPROpnd:$src, ADDRspii:$addr)]>;
 
-let isCompare=1, hasSideEffects=1 in {
-def CMPNEr : Pseudo<
-    (outs),
-    (ins GPROpnd:$op1, GPROpnd:$op2),
-     "# CMPNEr PSEUDO",
-    [(TinyRAMcmpne GPROpnd:$op1, GPROpnd:$op2)]
-    >;
-
-def CMPNEi : Pseudo<
-    (outs),
-    (ins GPROpnd:$op1, i32imm:$op2),
-     "# CMPNEi PSEUDO",
-    [(TinyRAMcmpne GPROpnd:$op1, imm:$op2)]
-    >;
-}
-
 // applying hasSideEffects is a hack
 // without it the instruction is sometimes optimized out
 let hasSideEffects=1 in
 def SelectCC : Pseudo<
     (outs GPROpnd:$dst),
-    (ins GPROpnd:$src, GPROpnd:$src2),
+    (ins GPROpnd:$trueC, GPROpnd:$falseC, GPROpnd:$lhs, GPROpnd:$rhs, i32imm:$cc),
     "# SelectCC PSEUDO",
-    [(set i32:$dst, (TinyRAMselectcc i32:$src, i32:$src2))]
+    [(set i32:$dst, (TinyRAMselectcc i32:$trueC, i32:$falseC, i32:$lhs, i32:$rhs, imm:$cc))]
+    >;
+
+let isBranch=1, isIndirectBranch=1, isTerminator=1 in
+def BRCond : Pseudo<
+    (outs),
+    (ins brtarget:$op2, GPROpnd:$lhs, GPROpnd:$rhs, i32imm:$cc),
+    "# BRCond PSEUDO",
+    [(TinyRAMbrcond bb:$op2, i32:$lhs, i32:$rhs, imm:$cc)]
     >;
 
 let Uses = [SP], mayStore=1 in
@@ -401,9 +384,9 @@ def CJMPr : F_0R0<
 def CJMPi : F_0I0<
     0b10101,
     (outs),
-    (ins brtarget:$op2),
+    (ins brtarget:$op2, GPROpnd:$lhs, GPROpnd:$rhs, i32imm:$cc),
     !strconcat("cjmp", " $op2"),
-    [(TinyRAMbrcond bb:$op2)]
+    []
     >;
 
 def CNJMPr : F_0R0<
@@ -426,12 +409,26 @@ def CNJMPi : F_0I0<
 // comparison instructions
 let isCompare=1, hasSideEffects=1 in {
 
+def CMPNEr : Pseudo<
+    (outs),
+    (ins GPROpnd:$op1, GPROpnd:$op2),
+     "# CMPNEr PSEUDO",
+    []
+    >;
+
+def CMPNEi : Pseudo<
+    (outs),
+    (ins GPROpnd:$op1, i32imm:$op2),
+     "# CMPNEi PSEUDO",
+    []
+    >;
+
 def CMPEr : F_RR0<
     0b01101,
     (outs),
     (ins GPROpnd:$dst, GPROpnd:$op2),
     !strconcat("cmpe", " $dst, $op2"),
-    [(TinyRAMcmpe GPROpnd:$dst, GPROpnd:$op2)]
+    []
     >;
 
 def CMPEi : F_RI0<
@@ -439,7 +436,7 @@ def CMPEi : F_RI0<
     (outs),
     (ins GPROpnd:$dst, i32imm:$op2),
     !strconcat("cmpe", " $dst, $op2"),
-    [(TinyRAMcmpe GPROpnd:$dst, imm:$op2)]
+    []
     >;
 
 def CMPAr : F_RR0<
@@ -447,7 +444,7 @@ def CMPAr : F_RR0<
     (outs),
     (ins GPROpnd:$dst, GPROpnd:$op2),
     !strconcat("cmpa", " $dst, $op2"),
-    [(TinyRAMcmpa GPROpnd:$dst, GPROpnd:$op2)]
+    []
     >;
 
 def CMPAi : F_RI0<
@@ -455,7 +452,7 @@ def CMPAi : F_RI0<
     (outs),
     (ins GPROpnd:$dst, i32imm:$op2),
     !strconcat("cmpa", " $dst, $op2"),
-    [(TinyRAMcmpa GPROpnd:$dst, imm:$op2)]
+    []
     >;
 
 def CMPAEr : F_RR0<
@@ -463,7 +460,7 @@ def CMPAEr : F_RR0<
     (outs),
     (ins GPROpnd:$dst, GPROpnd:$op2),
     !strconcat("cmpae", " $dst, $op2"),
-    [(TinyRAMcmpae GPROpnd:$dst, GPROpnd:$op2)]
+    []
     >;
 
 def CMPAEi : F_RI0<
@@ -471,7 +468,7 @@ def CMPAEi : F_RI0<
     (outs),
     (ins GPROpnd:$dst, i32imm:$op2),
     !strconcat("cmpae", " $dst, $op2"),
-    [(TinyRAMcmpae GPROpnd:$dst, imm:$op2)]
+    []
     >;
 
 def CMPGr : F_RR0<
@@ -479,7 +476,7 @@ def CMPGr : F_RR0<
     (outs),
     (ins GPROpnd:$dst, GPROpnd:$op2),
     !strconcat("cmpg", " $dst, $op2"),
-    [(TinyRAMcmpg GPROpnd:$dst, GPROpnd:$op2)]
+    []
     >;
 
 def CMPGi : F_RI0<
@@ -487,7 +484,7 @@ def CMPGi : F_RI0<
     (outs),
     (ins GPROpnd:$dst, i32imm:$op2),
     !strconcat("cmpg", " $dst, $op2"),
-    [(TinyRAMcmpg GPROpnd:$dst, imm:$op2)]
+    []
     >;
 
 def CMPGEr : F_RR0<
@@ -495,7 +492,7 @@ def CMPGEr : F_RR0<
     (outs),
     (ins GPROpnd:$dst, GPROpnd:$op2),
     !strconcat("cmpge", " $dst, $op2"),
-    [(TinyRAMcmpge GPROpnd:$dst, GPROpnd:$op2)]
+    []
     >;
 
 def CMPGEi : F_RI0<
@@ -503,7 +500,7 @@ def CMPGEi : F_RI0<
     (outs),
     (ins GPROpnd:$dst, i32imm:$op2),
     !strconcat("cmpge", " $dst, $op2"),
-    [(TinyRAMcmpge GPROpnd:$dst, imm:$op2)]
+    []
     >;
 
 }

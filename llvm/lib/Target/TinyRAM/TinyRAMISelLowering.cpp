@@ -574,48 +574,54 @@ public:
     return DAG.getTargetBlockAddress(BA, PtrVT);
   }
 
-  static llvm::SDValue getComparisonSDValue(SDLoc Dl, SelectionDAG &DAG, ISD::CondCode CC, SDValue LHS, SDValue RHS) {
+  struct ComparisonInfo {
+    TinyRAMISD::CondCodes CC;
+    llvm::SDValue LHS;
+    llvm::SDValue RHS;
+  };
+
+  static ComparisonInfo getComparisonInfo(ISD::CondCode CC, SDValue LHS, SDValue RHS) {
+    using Tcc = TinyRAMISD::CondCodes;
+
     switch (CC) {
       // signed
 
     case ISD::CondCode::SETGT:
-      return DAG.getNode(TinyRAMISD::CMPG, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPG, LHS, RHS};
 
     case ISD::CondCode::SETGE:
-      return DAG.getNode(TinyRAMISD::CMPGE, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPGE, LHS, RHS};
 
     case ISD::CondCode::SETLT:
-      return DAG.getNode(TinyRAMISD::CMPG, Dl, MVT::Glue, RHS, LHS);
+      return ComparisonInfo{Tcc::CMPG, RHS, LHS};
 
     case ISD::CondCode::SETLE:
-      return DAG.getNode(TinyRAMISD::CMPGE, Dl, MVT::Glue, RHS, LHS);
+      return ComparisonInfo{Tcc::CMPGE, RHS, LHS};
 
       // unsigned
 
     case ISD::CondCode::SETUGT:
-      return DAG.getNode(TinyRAMISD::CMPA, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPA, LHS, RHS};
 
     case ISD::CondCode::SETUGE:
-      return DAG.getNode(TinyRAMISD::CMPAE, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPAE, LHS, RHS};
 
     case ISD::CondCode::SETULT:
-      return DAG.getNode(TinyRAMISD::CMPA, Dl, MVT::Glue, RHS, LHS);
+      return ComparisonInfo{Tcc::CMPA, RHS, LHS};
 
     case ISD::CondCode::SETULE:
-      return DAG.getNode(TinyRAMISD::CMPAE, Dl, MVT::Glue, RHS, LHS);
+      return ComparisonInfo{Tcc::CMPAE, RHS, LHS};
 
       // equality
     case ISD::CondCode::SETEQ:
-      return DAG.getNode(TinyRAMISD::CMPE, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPE, LHS, RHS};
 
     case ISD::CondCode::SETNE:
-      return DAG.getNode(TinyRAMISD::CMPNE, Dl, MVT::Glue, LHS, RHS);
+      return ComparisonInfo{Tcc::CMPNE, LHS, RHS};
 
     default:
       llvm_unreachable("Invalid comparison type");
     }
-
-    return llvm::SDValue();
   }
 
   SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
@@ -629,9 +635,17 @@ public:
     assert(LHS.getSimpleValueType() == MVT::i32);
     assert(RHS.getSimpleValueType() == MVT::i32);
 
-    auto Cmp = getComparisonSDValue(Dl, DAG, CC, LHS, RHS);
+    auto Info = getComparisonInfo(CC, LHS, RHS);
 
-    return DAG.getNode(TinyRAMISD::BRCOND, Dl, MVT::Other, Chain, Dest, Cmp);
+    return DAG.getNode(
+        TinyRAMISD::BRCOND,
+        Dl,
+        MVT::Other,
+        Chain,
+        Dest,
+        Info.LHS,
+        Info.RHS,
+        DAG.getConstant((uint64_t)Info.CC, Dl, MVT::i32));
   }
 
   SDValue LowerSELECT_CC(SDValue Op, SelectionDAG &DAG) const {
@@ -644,10 +658,10 @@ public:
     assert(LHS.getSimpleValueType() == MVT::i32);
     assert(RHS.getSimpleValueType() == MVT::i32);
 
-    auto Cmp = getComparisonSDValue(Dl, DAG, CC, LHS, RHS);
+    auto Info = getComparisonInfo(CC, LHS, RHS);
 
-    SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
-    SDValue Ops[] = {TrueV, FalseV, Cmp};
+    SDVTList VTs = DAG.getVTList(Op.getValueType());
+    SDValue Ops[] = {TrueV, FalseV, Info.LHS, Info.RHS, DAG.getConstant((uint64_t)Info.CC, Dl, MVT::i32)};
 
     return DAG.getNode(TinyRAMISD::SELECT_CC, Dl, VTs, Ops);
 
@@ -660,12 +674,12 @@ public:
     ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(2))->get();
     SDLoc Dl(Op);
 
-    auto Cmp = getComparisonSDValue(Dl, DAG, CC, LHS, RHS);
+    auto Info = getComparisonInfo(CC, LHS, RHS);
 
     SDValue TrueV = DAG.getConstant(1, Dl, Op.getValueType());
     SDValue FalseV = DAG.getConstant(0, Dl, Op.getValueType());
-    SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
-    SDValue Ops[] = {TrueV, FalseV, Cmp};
+    SDVTList VTs = DAG.getVTList(Op.getValueType());
+    SDValue Ops[] = {TrueV, FalseV, Info.LHS, Info.RHS, DAG.getConstant((uint64_t)Info.CC, Dl, MVT::i32)};
 
     return DAG.getNode(TinyRAMISD::SELECT_CC, Dl, VTs, Ops);
   }
@@ -771,12 +785,8 @@ public:
       OPCODE(TinyRAMISD::CALL);
       OPCODE(TinyRAMISD::STWSP);
       OPCODE(TinyRAMISD::WRAPPER);
-      OPCODE(TinyRAMISD::CMPE);
-      OPCODE(TinyRAMISD::CMPA);
-      OPCODE(TinyRAMISD::CMPAE);
-      OPCODE(TinyRAMISD::CMPG);
-      OPCODE(TinyRAMISD::CMPGE);
       OPCODE(TinyRAMISD::BRCOND);
+      OPCODE(TinyRAMISD::SELECT_CC);
 #undef OPCODE
     default:
       return nullptr;

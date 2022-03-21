@@ -15,6 +15,7 @@
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"
 #include "TargetInfo/TinyRAMTargetInfo.h"
 #include "TinyRAM.h"
+#include "TinyRAMISelLowering.h"
 #include "TinyRAMInstrInfo.h"
 #include "TinyRAMMCInstLower.h"
 #include "TinyRAMTargetMachine.h"
@@ -50,6 +51,7 @@ public:
 
   bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo, const char *ExtraCode, raw_ostream &OS) override;
   void emitInstruction(const MachineInstr *MI) override;
+  void emitComparison(MCStreamer &Streamer, llvm::Register LHS, llvm::Register RHS, TinyRAMISD::CondCodes CC);
 };
 } // end of anonymous namespace
 
@@ -60,6 +62,44 @@ bool TinyRAMAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo, c
   MCOperand MO(Lower.lowerOperand(MI->getOperand(OpNo)));
   TinyRAMInstPrinter::printOperand(MO, MAI, OS);
   return false;
+}
+
+void TinyRAMAsmPrinter::emitComparison(
+    MCStreamer &Streamer,
+    llvm::Register LHS,
+    llvm::Register RHS,
+    TinyRAMISD::CondCodes CC) {
+  using Tcc = TinyRAMISD::CondCodes;
+
+  std::vector<llvm::MCInst> Insts;
+
+  switch (CC) {
+  case Tcc::CMPE:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPEr).addReg(LHS).addReg(RHS));
+    break;
+  case Tcc::CMPA:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPAr).addReg(LHS).addReg(RHS));
+    break;
+  case Tcc::CMPAE:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPAEr).addReg(LHS).addReg(RHS));
+    break;
+  case Tcc::CMPG:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPGr).addReg(LHS).addReg(RHS));
+    break;
+  case Tcc::CMPGE:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPGEr).addReg(LHS).addReg(RHS));
+    break;
+  case Tcc::CMPNE:
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPEr).addReg(LHS).addReg(RHS));
+    Insts.push_back(MCInstBuilder(TinyRAM::MOVi).addReg(TinyRAM::R12).addImm(0));
+    Insts.push_back(MCInstBuilder(TinyRAM::CMOVi).addReg(TinyRAM::R12).addImm(1));
+    Insts.push_back(MCInstBuilder(TinyRAM::CMPEi).addReg(TinyRAM::R12).addImm(0));
+    break;
+  }
+
+  for (const auto &Inst : Insts) {
+    EmitToStreamer(Streamer, Inst);
+  }
 }
 
 void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
@@ -111,11 +151,16 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
   case TinyRAM::SelectCC: {
     auto Dst = MI->getOperand(0).getReg();
-    auto Reg1 = MI->getOperand(1).getReg();
-    auto Reg2 = MI->getOperand(2).getReg();
+    auto TrueV = MI->getOperand(1).getReg();
+    auto FalseV = MI->getOperand(2).getReg();
+    auto LHS = MI->getOperand(3).getReg();
+    auto RHS = MI->getOperand(4).getReg();
+    auto CCInt = (TinyRAMISD::CondCodes)MI->getOperand(5).getImm();
 
-    const MCInst MCMI1 = MCInstBuilder(TinyRAM::MOVr).addReg(TinyRAM::R12).addReg(Reg2);
-    const MCInst MCMI2 = MCInstBuilder(TinyRAM::CMOVr).addReg(TinyRAM::R12).addReg(Reg1);
+    emitComparison(*OutStreamer, LHS, RHS, CCInt);
+
+    const MCInst MCMI1 = MCInstBuilder(TinyRAM::MOVr).addReg(TinyRAM::R12).addReg(FalseV);
+    const MCInst MCMI2 = MCInstBuilder(TinyRAM::CMOVr).addReg(TinyRAM::R12).addReg(TrueV);
     const MCInst MCMI3 = MCInstBuilder(TinyRAM::MOVr).addReg(Dst).addReg(TinyRAM::R12);
 
     EmitToStreamer(*OutStreamer, MCMI1);
@@ -123,30 +168,20 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
     EmitToStreamer(*OutStreamer, MCMI3);
   } break;
 
-  case TinyRAM::CMPNEi:
-  case TinyRAM::CMPNEr: {
-    auto Op1 = MI->getOperand(0).getReg();
-    auto Op2 = MI->getOperand(1);
+  case TinyRAM::BRCond: {
+    auto &Ctx = MF->getContext();
+    TinyRAMMCInstLower Lower(Ctx, *this);
 
-    if (Op2.isReg()) {
-      auto MI = MCInstBuilder(TinyRAM::CMPEr).addReg(Op1).addReg(Op2.getReg());
-      EmitToStreamer(*OutStreamer, MI);
-    } else if (Op2.isImm()) {
-      auto MI = MCInstBuilder(TinyRAM::CMPEi).addReg(Op1).addImm(Op2.getImm());
-      EmitToStreamer(*OutStreamer, MI);
-    } else {
-      llvm_unreachable("CMPNE: Unsupported operand type");
-    }
+    auto Address = MI->getOperand(0);
+    auto LHS = MI->getOperand(1).getReg();
+    auto RHS = MI->getOperand(2).getReg();
+    auto CCInt = (TinyRAMISD::CondCodes)MI->getOperand(3).getImm();
 
-    // now invert the flag
+    emitComparison(*OutStreamer, LHS, RHS, CCInt);
 
-    auto MI1 = MCInstBuilder(TinyRAM::MOVi).addReg(TinyRAM::R12).addImm(0);
-    auto MI2 = MCInstBuilder(TinyRAM::CMOVi).addReg(TinyRAM::R12).addImm(1);
-    auto MI3 = MCInstBuilder(TinyRAM::CMPEi).addReg(TinyRAM::R12).addImm(0);
+    const MCInst MCMI1 = MCInstBuilder(TinyRAM::CJMPi).addOperand(Lower.lowerOperand(Address));
 
-    EmitToStreamer(*OutStreamer, MI1);
-    EmitToStreamer(*OutStreamer, MI2);
-    EmitToStreamer(*OutStreamer, MI3);
+    EmitToStreamer(*OutStreamer, MCMI1);
   } break;
 
   default: {

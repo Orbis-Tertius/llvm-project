@@ -46,17 +46,19 @@ enum NodeType : unsigned {
 
   WRAPPER,
 
+  BRCOND,
+  SELECT_CC,
+};
+
+enum class CondCodes {
   CMPE,
   CMPA,
   CMPAE,
   CMPG,
   CMPGE,
   CMPNE,
-
-  BRCOND,
-
-  SELECT_CC,
 };
+
 } // end namespace TinyRAMISD
 
 std::unique_ptr<TargetLowering> createTargetLowering(const TargetMachine &TM, const TinyRAMSubtarget &STI);
