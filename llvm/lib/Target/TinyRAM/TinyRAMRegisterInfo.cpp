@@ -108,19 +108,21 @@ void TinyRAMRegisterInfo::eliminateFrameIndex(
   case TinyRAM::LDWFI:
     BuildMI(MBB, II, Dl, TII.get(Op)).addReg(TinyRAM::R12).addReg(FrameReg).addImm(Offset3);
 
-    BuildMI(MBB, II, Dl, TII.get(TinyRAM::LOADr)).addReg(Reg).addReg(TinyRAM::R12);
+    BuildMI(MBB, II, Dl, TII.get(TinyRAM::LOADr), Reg).addReg(TinyRAM::R12);
     break;
 
   case TinyRAM::LDAWFI:
     // TODO: should not offset be multiplied
-    BuildMI(MBB, II, Dl, TII.get(Op)).addReg(Reg).addReg(FrameReg).addImm(Offset3);
+    BuildMI(MBB, II, Dl, TII.get(Op), Reg).addReg(FrameReg).addImm(Offset3);
 
     break;
 
   case TinyRAM::STWFI:
     BuildMI(MBB, II, Dl, TII.get(Op)).addReg(TinyRAM::R12).addReg(FrameReg).addImm(Offset3);
 
-    BuildMI(MBB, II, Dl, TII.get(TinyRAM::STOREr)).addReg(TinyRAM::R12).addReg(Reg);
+    BuildMI(MBB, II, Dl, TII.get(TinyRAM::STOREr))
+        .addReg(TinyRAM::R12)
+        .addReg(Reg, getKillRegState(MI.getOperand(0).isKill()));
     break;
 
   default:
