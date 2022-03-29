@@ -271,6 +271,42 @@ def MULLi : F_RRI<
    [(set GPROpnd:$dst, (mul GPROpnd:$op1, imm:$op2))]
    >;
 
+let isCommutable = 1 in
+def MULLHUr : F_RRR<
+   0b00111,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("umulh", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (mulhu GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
+let isCommutable = 1 in
+def MULLHUi : F_RRI<
+   0b00111,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("umulh", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (mulhu GPROpnd:$op1, imm:$op2))]
+   >;
+
+let isCommutable = 1 in
+def MULLHSr : F_RRR<
+   0b01000,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, GPROpnd:$op2),
+   !strconcat("smulh", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (mulhs GPROpnd:$op1, GPROpnd:$op2))]
+   >;
+
+let isCommutable = 1 in
+def MULLHSi : F_RRI<
+   0b01000,
+   (outs GPROpnd:$dst),
+   (ins GPROpnd:$op1, i32imm:$op2),
+   !strconcat("smulh", " $dst, $op1, $op2"),
+   [(set GPROpnd:$dst, (mulhs GPROpnd:$op1, imm:$op2))]
+   >;
+
 def UDIVr : F_RRR<
    0b01001,
    (outs GPROpnd:$dst),
