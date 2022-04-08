@@ -130,8 +130,21 @@ void TinyRAMAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
   case TinyRAM::BLA: {
     if (MI->getOperand(0).getType() == MachineOperand::MO_Register) {
-      const MCInst MCMI = MCInstBuilder(TinyRAM::JMPr).addReg(MI->getOperand(0).getReg());
-      EmitToStreamer(*OutStreamer, MCMI);
+      auto &Ctx = MF->getContext();
+      TinyRAMMCInstLower Lower(Ctx, *this);
+      auto *Sym = Ctx.createNamedTempSymbol();
+
+      OutStreamer->emitLabel(Sym);
+
+      const auto *SymbolExpr = MCBinaryExpr::createAdd(
+          MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx), MCConstantExpr::create(16, Ctx), Ctx);
+      const MCInst MCMI1 =
+          MCInstBuilder(TinyRAM::MOVi).addReg(TinyRAM::LR).addOperand(MCOperand::createExpr(SymbolExpr));
+
+      const MCInst MCMI2 = MCInstBuilder(TinyRAM::JMPr).addReg(MI->getOperand(0).getReg());
+
+      EmitToStreamer(*OutStreamer, MCMI1);
+      EmitToStreamer(*OutStreamer, MCMI2);
     } else {
       llvm_unreachable("Unexpected BLA operand");
     }
