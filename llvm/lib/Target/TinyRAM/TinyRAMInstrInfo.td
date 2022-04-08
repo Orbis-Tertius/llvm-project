@@ -445,6 +445,7 @@ def CNJMPi : F_0I0<
 // comparison instructions
 let isCompare=1, hasSideEffects=1 in {
 
+let isCommutable = 1 in
 def CMPNEr : Pseudo<
     (outs),
     (ins GPROpnd:$op1, GPROpnd:$op2),
@@ -452,6 +453,7 @@ def CMPNEr : Pseudo<
     []
     >;
 
+let isCommutable = 1 in
 def CMPNEi : Pseudo<
     (outs),
     (ins GPROpnd:$op1, i32imm:$op2),
@@ -459,6 +461,7 @@ def CMPNEi : Pseudo<
     []
     >;
 
+let isCommutable = 1 in
 def CMPEr : F_RR0<
     0b01101,
     (outs),
@@ -467,6 +470,7 @@ def CMPEr : F_RR0<
     []
     >;
 
+let isCommutable = 1 in
 def CMPEi : F_RI0<
     0b01101,
     (outs),
