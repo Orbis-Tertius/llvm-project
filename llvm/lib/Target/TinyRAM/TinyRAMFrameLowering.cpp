@@ -112,8 +112,6 @@ void TinyRAMFrameLowering::determineCalleeSaves(MachineFunction &MF, BitVector &
 
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  SavedRegs.set(TinyRAM::LR);
-
   int Offset = -4;
 
   // reserve for FP
