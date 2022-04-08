@@ -391,7 +391,7 @@ public:
       report_fatal_error("Unsupported calling convention");
     case CallingConv::Fast:
     case CallingConv::C:
-      return LowerCCCCallTo(Chain, Callee, CallConv, IsVarArg, IsTailCall, Outs, OutVals, Ins, Dl, DAG, InVals);
+      return lowerCall(Chain, Callee, CallConv, IsVarArg, IsTailCall, Outs, OutVals, Ins, Dl, DAG, InVals);
     }
   }
 
@@ -414,7 +414,7 @@ public:
 
   /// Lower the result values of a call into the appropriate copies
   /// out of appropriate physical registers / memory locations.
-  static SDValue LowerCallResult(
+  static SDValue lowerCallResult(
       SDValue Chain,
       SDValue InFlag,
       const SmallVectorImpl<CCValAssign> &RVLocs,
@@ -451,7 +451,7 @@ public:
     }
   }
 
-  static SDValue saveArgumentsToStack(
+  static SDValue saveStackArguments(
       SelectionDAG &DAG,
       const SDValue &Chain,
       const SDLoc &Dl,
@@ -487,7 +487,7 @@ public:
 
   using SavedRegsInfo = SmallVector<std::pair<unsigned, EVT>, 4>;
 
-  static std::tuple<SDValue, SavedRegsInfo> saveArgumentsToRegister(
+  static std::tuple<SDValue, SavedRegsInfo> saveRegisterArguments(
       SelectionDAG &DAG,
       const SDValue &Chain,
       const SDLoc &Dl,
@@ -515,9 +515,31 @@ public:
     return std::make_pair(TChain, RegsToPass);
   }
 
+  static SmallVector<SDValue, 8> prepareCallNodeArguments(
+      SelectionDAG &DAG,
+      const llvm::SDValue &Chain,
+      const llvm::SDValue &Glue,
+      const llvm::SDValue &Callee,
+      const SavedRegsInfo &RegsToPass) {
+    // Returns a chain & a flag for retval copy to use.
+    SmallVector<SDValue, 8> Ops;
+    Ops.push_back(Chain);
+    Ops.push_back(Callee);
+
+    // Add argument registers to the end of the list so that they are
+    // known live into the call.
+    for (unsigned I = 0, E = RegsToPass.size(); I != E; ++I)
+      Ops.push_back(DAG.getRegister(RegsToPass[I].first, RegsToPass[I].second));
+
+    if (Glue.getNode())
+      Ops.push_back(Glue);
+
+    return Ops;
+  }
+
   /// Function arguments are copied from virtual regs to (physical regs)/(stack frame),
   /// CALLSEQ_START and CALLSEQ_END are emitted.
-  SDValue LowerCCCCallTo(
+  SDValue lowerCall(
       SDValue Chain,
       SDValue Callee,
       CallingConv::ID CallConv,
@@ -544,9 +566,8 @@ public:
 
     const auto Chain1 = DAG.getCALLSEQ_START(Chain, NumBytes, 0, Dl);
 
-    const auto Chain2 = saveArgumentsToStack(DAG, Chain1, Dl, ArgLocs, OutVals);
-
-    const auto Res = saveArgumentsToRegister(DAG, Chain2, Dl, ArgLocs, OutVals);
+    const auto Chain2 = saveStackArguments(DAG, Chain1, Dl, ArgLocs, OutVals);
+    const auto Res = saveRegisterArguments(DAG, Chain2, Dl, ArgLocs, OutVals);
 
     const auto Chain3 = std::get<0>(Res);
     const auto Glue3 = Chain3.getValue(1);
@@ -559,22 +580,9 @@ public:
     else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
       Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i32);
 
-    // Returns a chain & a flag for retval copy to use.
-    SmallVector<SDValue, 8> Ops;
-    Ops.push_back(Chain3);
-    Ops.push_back(Callee);
-
-    // Add argument registers to the end of the list so that they are
-    // known live into the call.
-    const auto &RegsToPass = std::get<1>(Res);
-    for (unsigned I = 0, E = RegsToPass.size(); I != E; ++I)
-      Ops.push_back(DAG.getRegister(RegsToPass[I].first, RegsToPass[I].second));
-
-    if (Glue3.getNode())
-      Ops.push_back(Glue3);
-
+    auto CallNodeArguments = prepareCallNodeArguments(DAG, Chain3, Glue3, Callee, std::get<1>(Res));
     SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
-    const auto Chain4 = DAG.getNode(TinyRAMISD::CALL, Dl, NodeTys, Ops);
+    const auto Chain4 = DAG.getNode(TinyRAMISD::CALL, Dl, NodeTys, CallNodeArguments);
     const auto Glue4 = Chain4.getValue(1);
 
     // Create the CALLSEQ_END node.
@@ -588,7 +596,7 @@ public:
     RetCCInfo.AnalyzeCallResult(Ins, RetCC_TinyRAM);
 
     // Handle result values, copying them out of physregs into vregs that we return.
-    return LowerCallResult(Chain5, Glue5, RVLocs, Dl, DAG, InVals);
+    return lowerCallResult(Chain5, Glue5, RVLocs, Dl, DAG, InVals);
   }
 
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const {
