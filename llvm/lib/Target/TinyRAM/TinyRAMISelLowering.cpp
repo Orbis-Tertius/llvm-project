@@ -23,6 +23,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/KnownBits.h"
 #include <cctype>
+#include <utility>
 
 using namespace llvm;
 
@@ -434,6 +435,86 @@ public:
     return Chain;
   }
 
+  static SDValue promoteValueIfNeeded(SelectionDAG &DAG, const SDLoc &Dl, const CCValAssign &VA, const SDValue &Arg) {
+    // Promote the value if needed.
+    switch (VA.getLocInfo()) {
+    default:
+      llvm_unreachable("Unknown loc info!");
+    case CCValAssign::Full:
+      return Arg;
+    case CCValAssign::SExt:
+      return DAG.getNode(ISD::SIGN_EXTEND, Dl, VA.getLocVT(), Arg);
+    case CCValAssign::ZExt:
+      return DAG.getNode(ISD::ZERO_EXTEND, Dl, VA.getLocVT(), Arg);
+    case CCValAssign::AExt:
+      return DAG.getNode(ISD::ANY_EXTEND, Dl, VA.getLocVT(), Arg);
+    }
+  }
+
+  static SDValue saveArgumentsToStack(
+      SelectionDAG &DAG,
+      const SDValue &Chain,
+      const SDLoc &Dl,
+      const SmallVector<CCValAssign, 16> &ArgLocs,
+      const SmallVectorImpl<SDValue> &OutVals) {
+
+    auto TChain = Chain;
+
+    SmallVector<SDValue, 12> MemOpChains;
+    for (unsigned I = 0, E = ArgLocs.size(); I != E; ++I) {
+      const CCValAssign &VA = ArgLocs[I];
+      SDValue Arg = promoteValueIfNeeded(DAG, Dl, VA, OutVals[I]);
+
+      // Arguments that can be passed on register must be kept at RegsToPass vector
+      if (!VA.isRegLoc()) {
+        assert(VA.isMemLoc());
+
+        int Offset = VA.getLocMemOffset();
+        assert(Offset % 4 == 0);
+
+        MemOpChains.push_back(
+            DAG.getNode(TinyRAMISD::STWSP, Dl, MVT::Other, TChain, Arg, DAG.getConstant(Offset, Dl, MVT::i32)));
+      }
+    }
+
+    // Transform all store nodes into one single node because
+    // all store nodes are independent of each other.
+    if (!MemOpChains.empty())
+      TChain = DAG.getNode(ISD::TokenFactor, Dl, MVT::Other, MemOpChains);
+
+    return TChain;
+  }
+
+  using SavedRegsInfo = SmallVector<std::pair<unsigned, EVT>, 4>;
+
+  static std::tuple<SDValue, SavedRegsInfo> saveArgumentsToRegister(
+      SelectionDAG &DAG,
+      const SDValue &Chain,
+      const SDLoc &Dl,
+      const SmallVector<CCValAssign, 16> &ArgLocs,
+      const SmallVectorImpl<SDValue> &OutVals) {
+
+    SmallVector<std::pair<unsigned, EVT>, 4> RegsToPass;
+
+    auto TChain = Chain;
+
+    // Walk the register/memloc assignments, inserting copies/loads.
+    SDValue InFlag;
+    for (unsigned I = 0, E = ArgLocs.size(); I != E; ++I) {
+      const CCValAssign &VA = ArgLocs[I];
+      SDValue Arg = promoteValueIfNeeded(DAG, Dl, VA, OutVals[I]);
+
+      // Arguments that can be passed on register must be kept at RegsToPass vector
+      if (VA.isRegLoc()) {
+        RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg.getValueType()));
+        TChain = DAG.getCopyToReg(TChain, Dl, VA.getLocReg(), Arg, InFlag);
+        InFlag = TChain.getValue(1);
+      }
+    }
+
+    return std::make_pair(TChain, RegsToPass);
+  }
+
   /// Function arguments are copied from virtual regs to (physical regs)/(stack frame),
   /// CALLSEQ_START and CALLSEQ_END are emitted.
   SDValue LowerCCCCallTo(
@@ -461,61 +542,14 @@ public:
     unsigned NumBytes = CCInfo.getNextStackOffset();
     auto PtrVT = getPointerTy(DAG.getDataLayout());
 
-    Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, Dl);
+    const auto Chain1 = DAG.getCALLSEQ_START(Chain, NumBytes, 0, Dl);
 
-    SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
-    SmallVector<SDValue, 12> MemOpChains;
+    const auto Chain2 = saveArgumentsToStack(DAG, Chain1, Dl, ArgLocs, OutVals);
 
-    // Walk the register/memloc assignments, inserting copies/loads.
-    for (unsigned I = 0, E = ArgLocs.size(); I != E; ++I) {
-      CCValAssign &VA = ArgLocs[I];
-      SDValue Arg = OutVals[I];
+    const auto Res = saveArgumentsToRegister(DAG, Chain2, Dl, ArgLocs, OutVals);
 
-      // Promote the value if needed.
-      switch (VA.getLocInfo()) {
-      default:
-        llvm_unreachable("Unknown loc info!");
-      case CCValAssign::Full:
-        break;
-      case CCValAssign::SExt:
-        Arg = DAG.getNode(ISD::SIGN_EXTEND, Dl, VA.getLocVT(), Arg);
-        break;
-      case CCValAssign::ZExt:
-        Arg = DAG.getNode(ISD::ZERO_EXTEND, Dl, VA.getLocVT(), Arg);
-        break;
-      case CCValAssign::AExt:
-        Arg = DAG.getNode(ISD::ANY_EXTEND, Dl, VA.getLocVT(), Arg);
-        break;
-      }
-
-      // Arguments that can be passed on register must be kept at RegsToPass vector
-      if (VA.isRegLoc()) {
-        RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
-      } else {
-        assert(VA.isMemLoc());
-
-        int Offset = VA.getLocMemOffset();
-        assert(Offset % 4 == 0);
-
-        MemOpChains.push_back(
-            DAG.getNode(TinyRAMISD::STWSP, Dl, MVT::Other, Chain, Arg, DAG.getConstant(Offset, Dl, MVT::i32)));
-      }
-    }
-
-    // Transform all store nodes into one single node because
-    // all store nodes are independent of each other.
-    if (!MemOpChains.empty())
-      Chain = DAG.getNode(ISD::TokenFactor, Dl, MVT::Other, MemOpChains);
-
-    // Build a sequence of copy-to-reg nodes chained together with token
-    // chain and flag operands which copy the outgoing args into registers.
-    // The InFlag in necessary since all emitted instructions must be
-    // stuck together.
-    SDValue InFlag;
-    for (unsigned I = 0, E = RegsToPass.size(); I != E; ++I) {
-      Chain = DAG.getCopyToReg(Chain, Dl, RegsToPass[I].first, RegsToPass[I].second, InFlag);
-      InFlag = Chain.getValue(1);
-    }
+    const auto Chain3 = std::get<0>(Res);
+    const auto Glue3 = Chain3.getValue(1);
 
     // If the callee is a GlobalAddress node (quite common, every direct call is)
     // turn it into a TargetGlobalAddress node so that legalize doesn't hack it.
@@ -527,25 +561,26 @@ public:
 
     // Returns a chain & a flag for retval copy to use.
     SmallVector<SDValue, 8> Ops;
-    Ops.push_back(Chain);
+    Ops.push_back(Chain3);
     Ops.push_back(Callee);
 
     // Add argument registers to the end of the list so that they are
     // known live into the call.
+    const auto &RegsToPass = std::get<1>(Res);
     for (unsigned I = 0, E = RegsToPass.size(); I != E; ++I)
-      Ops.push_back(DAG.getRegister(RegsToPass[I].first, RegsToPass[I].second.getValueType()));
+      Ops.push_back(DAG.getRegister(RegsToPass[I].first, RegsToPass[I].second));
 
-    if (InFlag.getNode())
-      Ops.push_back(InFlag);
+    if (Glue3.getNode())
+      Ops.push_back(Glue3);
 
     SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
-    Chain = DAG.getNode(TinyRAMISD::CALL, Dl, NodeTys, Ops);
-    InFlag = Chain.getValue(1);
+    const auto Chain4 = DAG.getNode(TinyRAMISD::CALL, Dl, NodeTys, Ops);
+    const auto Glue4 = Chain4.getValue(1);
 
     // Create the CALLSEQ_END node.
-    Chain = DAG.getCALLSEQ_END(
-        Chain, DAG.getConstant(NumBytes, Dl, PtrVT, true), DAG.getConstant(0, Dl, PtrVT, true), InFlag, Dl);
-    InFlag = Chain.getValue(1);
+    const auto Chain5 = DAG.getCALLSEQ_END(
+        Chain4, DAG.getConstant(NumBytes, Dl, PtrVT, true), DAG.getConstant(0, Dl, PtrVT, true), Glue4, Dl);
+    const auto Glue5 = Chain5.getValue(1);
 
     SmallVector<CCValAssign, 16> RVLocs;
     // Analyze return values to determine the number of bytes of stack required.
@@ -553,7 +588,7 @@ public:
     RetCCInfo.AnalyzeCallResult(Ins, RetCC_TinyRAM);
 
     // Handle result values, copying them out of physregs into vregs that we return.
-    return LowerCallResult(Chain, InFlag, RVLocs, Dl, DAG, InVals);
+    return LowerCallResult(Chain5, Glue5, RVLocs, Dl, DAG, InVals);
   }
 
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const {
