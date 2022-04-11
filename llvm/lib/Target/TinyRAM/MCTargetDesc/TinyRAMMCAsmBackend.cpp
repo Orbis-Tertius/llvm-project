@@ -49,7 +49,7 @@ public:
       const MCAsmLayout &Layout) const override {
     return false;
   }
-  bool writeNopData(raw_ostream &OS, uint64_t Count) const override;
+  bool writeNopData(raw_ostream &OS, uint64_t Count, const MCSubtargetInfo *STI) const override;
   std::unique_ptr<MCObjectTargetWriter> createObjectTargetWriter() const override {
     return createTinyRAMObjectWriter(OSABI);
   }
@@ -82,7 +82,7 @@ void TinyRAMMCAsmBackend::applyFixup(
   llvm_unreachable("Fixups should be always turned into relocations");
 }
 
-bool TinyRAMMCAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const {
+bool TinyRAMMCAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count, const MCSubtargetInfo *STI) const {
   for (uint64_t I = 0; I != Count; ++I)
     OS << '\x7';
   return true;

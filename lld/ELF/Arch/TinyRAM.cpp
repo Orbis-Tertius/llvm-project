@@ -31,7 +31,7 @@ public:
 };
 } // namespace
 
-TinyRAM::TinyRAM() { noneRel = R_TINYRAM_NONE; }
+TinyRAM::TinyRAM() {}
 
 RelExpr TinyRAM::getRelExpr(RelType type, const Symbol &s,
                             const uint8_t *loc) const {
