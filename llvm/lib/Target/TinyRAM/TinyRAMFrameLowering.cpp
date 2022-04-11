@@ -27,7 +27,6 @@ TinyRAMFrameLowering::TinyRAMFrameLowering()
 
 void TinyRAMFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const {
 
-  assert(hasFP(MF));
   assert(&MF.front() == &MBB && "Shrink-wrapping not supported");
 
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -48,32 +47,37 @@ void TinyRAMFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &
   assert(MFI.getStackSize() % 4 == 0 && "Misaligned frame size");
   const int FrameSize = MFI.getStackSize();
 
-  // Save frame pointer
-  MBB.addLiveIn(TinyRAM::FP);
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
-      .addReg(TinyRAM::R12)
-      .addReg(TinyRAM::SP)
-      .addImm(4)
-      .setMIFlag(MachineInstr::FrameSetup);
+  if (hasFP(MF)) {
+    // Save frame pointer
+    MBB.addLiveIn(TinyRAM::FP);
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
+        .addReg(TinyRAM::R12)
+        .addReg(TinyRAM::SP)
+        .addImm(4)
+        .setMIFlag(MachineInstr::FrameSetup);
 
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::STOREr))
-      .addReg(TinyRAM::R12)
-      .addReg(TinyRAM::FP)
-      .setMIFlag(MachineInstr::FrameSetup);
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::STOREr))
+        .addReg(TinyRAM::R12)
+        .addReg(TinyRAM::FP)
+        .setMIFlag(MachineInstr::FrameSetup);
 
-  // Set the FP from the SP.
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::MOVr))
-      .addReg(TinyRAM::FP)
-      .addReg(TinyRAM::SP)
-      .setMIFlag(MachineInstr::FrameSetup);
+    // Set the FP from the SP.
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::MOVr))
+        .addReg(TinyRAM::FP)
+        .addReg(TinyRAM::SP)
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
 
-  // Allocate space on the stack
   MBB.addLiveIn(TinyRAM::SP);
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
-      .addReg(TinyRAM::SP)
-      .addReg(TinyRAM::SP)
-      .addImm(FrameSize)
-      .setMIFlag(MachineInstr::FrameSetup);
+
+  if (FrameSize != 0) {
+    // Allocate space on the stack
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
+        .addReg(TinyRAM::SP)
+        .addReg(TinyRAM::SP)
+        .addImm(FrameSize)
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
 
   // TODO: check register liveness
 }
@@ -84,27 +88,42 @@ void TinyRAMFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &
 
   DebugLoc Dl;
 
-  // Set the SP from the FP.
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::MOVr))
-      .addReg(TinyRAM::SP)
-      .addReg(TinyRAM::FP)
-      .setMIFlag(MachineInstr::FrameDestroy);
+  if (hasFP(MF)) {
+    // Set the SP from the FP.
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::MOVr))
+        .addReg(TinyRAM::SP)
+        .addReg(TinyRAM::FP)
+        .setMIFlag(MachineInstr::FrameDestroy);
 
-  // Restore frame pointer
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
-      .addReg(TinyRAM::R12)
-      .addReg(TinyRAM::SP)
-      .addImm(4)
-      .setMIFlag(MachineInstr::FrameDestroy);
+    // Restore frame pointer
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::SUBi))
+        .addReg(TinyRAM::R12)
+        .addReg(TinyRAM::SP)
+        .addImm(4)
+        .setMIFlag(MachineInstr::FrameDestroy);
 
-  BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::LOADr))
-      .addReg(TinyRAM::FP)
-      .addReg(TinyRAM::R12)
-      .setMIFlag(MachineInstr::FrameDestroy);
+    BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::LOADr))
+        .addReg(TinyRAM::FP)
+        .addReg(TinyRAM::R12)
+        .setMIFlag(MachineInstr::FrameDestroy);
+  } else {
+    MachineFrameInfo &MFI = MF.getFrameInfo();
+
+    assert(MFI.getStackSize() % 4 == 0 && "Misaligned frame size");
+    const int FrameSize = MFI.getStackSize();
+
+    if (FrameSize != 0) {
+      BuildMI(MBB, MBBI, Dl, TII.get(TinyRAM::ADDi))
+          .addReg(TinyRAM::SP)
+          .addReg(TinyRAM::SP)
+          .addImm(FrameSize)
+          .setMIFlag(MachineInstr::FrameSetup);
+    }
+  }
 }
 
 bool TinyRAMFrameLowering::hasFP(const MachineFunction &MF) const {
-  return true;
+  return MF.getTarget().Options.DisableFramePointerElim(MF) || MF.getFrameInfo().hasVarSizedObjects();
 }
 
 void TinyRAMFrameLowering::determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs, RegScavenger *RS) const {
@@ -112,10 +131,12 @@ void TinyRAMFrameLowering::determineCalleeSaves(MachineFunction &MF, BitVector &
 
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  int Offset = -4;
+  if (hasFP(MF)) {
+    int Offset = -4;
 
-  // reserve for FP
-  MFI.CreateFixedObject(4, Offset, true);
+    // reserve for FP
+    MFI.CreateFixedObject(4, Offset, true);
+  }
 }
 
 // This function eliminates ADJCALLSTACKDOWN,

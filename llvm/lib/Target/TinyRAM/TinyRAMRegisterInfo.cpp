@@ -9,6 +9,7 @@
 #include "TinyRAMRegisterInfo.h"
 #include "MCTargetDesc/TinyRAMMCTargetDesc.h"
 #include "TinyRAM.h"
+#include "TinyRAMFrameLowering.h"
 #include "TinyRAMInstrInfo.h"
 #include "TinyRAMSubtarget.h"
 #include "llvm/ADT/BitVector.h"
@@ -72,6 +73,7 @@ void TinyRAMRegisterInfo::eliminateFrameIndex(
   MachineOperand &FrameOp = MI.getOperand(FIOperandNum);
   MachineFunction &MF = *MI.getParent()->getParent();
   MachineBasicBlock &MBB = *MI.getParent();
+  const TinyRAMFrameLowering *TFI = getFrameLowering(MF);
   DebugLoc Dl = MI.getDebugLoc();
 
   const int StackSize = MF.getFrameInfo().getStackSize();
@@ -96,11 +98,17 @@ void TinyRAMRegisterInfo::eliminateFrameIndex(
   const TinyRAMInstrInfo &TII = *static_cast<const TinyRAMInstrInfo *>(MF.getSubtarget().getInstrInfo());
 
   auto FrameReg = getFrameRegister(MF);
+  const auto &MFI = MF.getFrameInfo();
 
-  int Offset3 = Offset2;
+  assert(MFI.getStackSize() % 4 == 0 && "Misaligned frame size");
+  const int FrameSize = MFI.getStackSize();
+
+  const int Offset25 = TFI->hasFP(MF) ? Offset2 : Offset2 + FrameSize;
+
+  int Offset3 = Offset25;
   int Op = TinyRAM::ADDi;
-  if (Offset2 < 0) {
-    Offset3 = -Offset2;
+  if (Offset25 < 0) {
+    Offset3 = -Offset25;
     Op = TinyRAM::SUBi;
   }
 
@@ -134,5 +142,7 @@ void TinyRAMRegisterInfo::eliminateFrameIndex(
 }
 
 Register TinyRAMRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-  return TinyRAM::FP;
+  const TinyRAMFrameLowering *TFI = getFrameLowering(MF);
+
+  return TFI->hasFP(MF) ? TinyRAM::FP : TinyRAM::SP;
 }
