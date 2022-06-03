@@ -28,4 +28,5 @@ TinyRAMSubtarget::TinyRAMSubtarget(
     const std::string &FS,
     const TargetMachine &TM)
     : TinyRAMGenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS), TargetTriple(TT), InstrInfo(*this),
-      TLInfo(createTargetLowering(TM, *this)), FrameLowering() {}
+      TLInfo(createTargetLowering(TM, *this)), SelectionDAGInfo(std::make_unique<SelectionDAGTargetInfo>()),
+      FrameLowering() {}

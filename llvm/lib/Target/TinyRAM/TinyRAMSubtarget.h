@@ -33,6 +33,7 @@ class TinyRAMSubtarget : public TinyRAMGenSubtargetInfo {
 
   TinyRAMInstrInfo InstrInfo;
   std::unique_ptr<TargetLowering> TLInfo;
+  std::unique_ptr<SelectionDAGTargetInfo> SelectionDAGInfo;
   TinyRAMFrameLowering FrameLowering;
 
 public:
@@ -52,6 +53,10 @@ public:
   }
   const TargetLowering *getTargetLowering() const override {
     return TLInfo.get();
+  }
+
+  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override {
+    return SelectionDAGInfo.get();
   }
 };
 
