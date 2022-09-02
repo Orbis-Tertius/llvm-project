@@ -625,6 +625,25 @@ def STOREBi : F_RI0<
 
 // Special instructions
 
+let hasSideEffects=1 in
+{
+def OUTi : F_0I0<
+    0b11110,
+    (outs),
+    (ins i32imm:$op2),
+    !strconcat("out", " $op2"),
+    []
+    >;
+
+def OUTr : F_0R0<
+    0b11110,
+    (outs),
+    (ins GPROpnd:$op2),
+    !strconcat("out", " $op2"),
+    []
+    >;
+}
+
 let isBranch=1, isIndirectBranch=1, isTerminator=1, isBarrier = 1 in
 {
 def ANSWERi : F_0I0<
