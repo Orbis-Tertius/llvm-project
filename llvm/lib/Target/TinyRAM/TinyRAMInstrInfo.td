@@ -625,24 +625,6 @@ def STOREBi : F_RI0<
 
 // Special instructions
 
-let mayLoad=1 in
-def READi : F_RI0<
-   0b11110,
-   (outs GPROpnd:$dst),
-   (ins i32imm:$op2),
-   !strconcat("read", " $dst, $op2"),
-   []
-   >;
-
-let mayLoad=1 in
-def READr : F_RR0<
-   0b11110,
-   (outs GPROpnd:$dst),
-   (ins GPROpnd:$op2),
-   !strconcat("read", " $dst, $op2"),
-   []
-   >;
-
 let isBranch=1, isIndirectBranch=1, isTerminator=1, isBarrier = 1 in
 {
 def ANSWERi : F_0I0<
